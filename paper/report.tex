@@ -1,0 +1,931 @@
+% ============================================================
+%  CropAI -- BMSCE Major Project Report
+%  Format: BMSCE/VTU Project Report Template
+%  Compiler: pdfLaTeX (Overleaf)
+% ============================================================
+
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage{times}
+\usepackage{setspace}
+\usepackage[a4paper, left=1.5in, right=1in, top=1in, bottom=1in]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{tocloft}
+\usepackage{etoolbox}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{url}
+\usepackage{microtype}
+
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue,breaklinks=true}
+
+\onehalfspacing
+
+\titleformat{\chapter}[hang]{\bfseries\centering\LARGE}{Chapter \thechapter}{1em}{}
+\titleformat{\section}[hang]{\bfseries\Large}{\thesection}{1em}{}
+\titleformat{\subsection}[hang]{\bfseries\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}[hang]{\bfseries\normalsize}{\thesubsubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textit{CropAI: An Explainable Agricultural Decision Support System}}
+\lfoot{\textit{Dept. of CSE, BMSCE}}
+\rfoot{\textit{Page \thepage}}
+\makeatletter\let\ps@plain\ps@fancy\makeatother
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% ============================================================
+%  TITLE PAGE
+% ============================================================
+\begin{titlepage}
+  \thispagestyle{empty}
+  \centering
+  {\Huge \textbf{CropAI: An Explainable, Uncertainty-Aware Agricultural Decision Support System}}\\[1.0cm]
+  \includegraphics[width=0.18\linewidth]{VTU-Logojpg.jpg}\\[0.9cm]
+  {\Large \textbf{PROJECT REPORT}}\\[0.2cm]
+  {\large \textit{Submitted by}}\\[0.5cm]
+  {\large Group Number: \textless Specify here\textgreater}\\[0.3cm]
+  {\large Bramha Anilkumar Bajannavar (1BM23CS038)}\\
+  {\large Daivya Priyankkumar Shah (1BM23CS\textless USN\textgreater)}\\
+  {\large Bhavya J Makadia (1BM23CS\textless USN\textgreater)}\\
+  {\large Hitesh Sharma (1BM23CS\textless USN\textgreater)}\\[0.7cm]
+  {\itshape in partial fulfillment for the award of the degree of}\\[0.15cm]
+  {\Large \textbf{BACHELOR OF ENGINEERING}}\\[0.2cm]
+  {\large in}\\[0.2cm]
+  {\Large \textbf{COMPUTER SCIENCE AND ENGINEERING}}\\[0.9cm]
+  {\large Under the Guidance of}\\
+  {\large \textbf{Monisha H M}}\\
+  {\large Assistant Professor, Department of CSE, BMSCE}
+  \vfill
+  \includegraphics[width=0.18\linewidth]{bmscelogo.jpg}\\[0.5cm]
+  {\Large \textbf{B.M.S. COLLEGE OF ENGINEERING}}\\
+  {\large (Autonomous Institution under VTU)}\\
+  {\large BENGALURU -- 560019}\\
+  {\large Academic Year -- 2025--2026}
+\end{titlepage}
+
+% ============================================================
+%  CERTIFICATE
+% ============================================================
+\chapter*{Certificate}
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{Certificate}
+\vspace{1cm}
+This is to certify that the project report entitled \textbf{``CropAI: An Explainable, Uncertainty-Aware Agricultural Decision Support System''} is a bonafide work carried out by the students listed below in partial fulfillment of the requirements for the award of the degree of \textbf{Bachelor of Engineering} in \textbf{Computer Science and Engineering}, under our supervision during the academic year 2025--2026.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|l|c|}
+\hline
+\textbf{Sl.~No.} & \textbf{Student Name} & \textbf{USN} \\
+\hline
+1 & Bramha Anilkumar Bajannavar & 1BM23CS038 \\
+\hline
+2 & Daivya Priyankkumar Shah & 1BM23CS\textless USN\textgreater \\
+\hline
+3 & Bhavya J Makadia & 1BM23CS\textless USN\textgreater \\
+\hline
+4 & Hitesh Sharma & 1BM23CS\textless USN\textgreater \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{2cm}
+\begin{flushleft}
+Guide Signature \hspace{28mm} HoD Signature \hspace{22mm} Principal Signature\\
+(Monisha H M) \hspace{30mm} Dr.~Kavitha Sooda \hspace{14mm} Dr.~Bheemsha Arya
+\end{flushleft}
+\vspace{2cm}
+\begin{flushleft}
+Name and signature of Examiners along with date:\\[0.8cm]
+Examiner 1:\\[0.8cm]
+Examiner 2:\\
+\end{flushleft}
+
+% ============================================================
+%  ABSTRACT
+% ============================================================
+\chapter*{Abstract}
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Agricultural decision-making remains heavily dependent on expert judgment, manual crop inspection, and fragmented information sources. This project presents \textbf{CropAI}, a multi-module agricultural decision support system that integrates three independent machine learning pipelines: (1)~leaf disease classification using a fine-tuned MobileNetV3-Small convolutional neural network trained on the PlantVillage dataset spanning 38~disease/healthy classes; (2)~crop recommendation using a calibrated Random Forest classifier on soil and environmental parameters across 22~crop classes; and (3)~crop yield prediction using a Random Forest regressor with log-transformed targets trained on Indian district-level agricultural production data.
+
+Each module is augmented with explainability mechanisms: Gradient-weighted Class Activation Mapping (Grad-CAM) for the image-based disease diagnosis module and SHapley Additive exPlanations (SHAP) for the tabular crop recommendation and yield prediction modules. Uncertainty quantification is incorporated through Monte Carlo Dropout for the disease classifier, Platt scaling calibration for the crop recommender, and split conformal prediction intervals for yield estimation.
+
+The system is deployed as a decoupled service-oriented architecture comprising a FastAPI REST backend and a Streamlit web frontend, containerized using Docker for reproducible deployment. Experimental evaluation on held-out test sets yields a disease classification accuracy of 99.17\% (macro F1: 0.985), a crop recommendation accuracy of 100\% on the test partition, and a yield prediction $R^2$ of 0.947 with 94.8\% empirical coverage at the 90\% nominal conformal level.
+
+\noindent\textbf{Keywords:} Agricultural Decision Support, Explainable AI, Uncertainty Quantification, Crop Disease Detection, Crop Recommendation, Yield Prediction, Grad-CAM, SHAP, Conformal Prediction, Transfer Learning.
+
+% ============================================================
+%  DECLARATION
+% ============================================================
+\chapter*{Declaration}
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{Declaration}
+
+We hereby declare that the Major Project Phase-2 work entitled \textbf{``CropAI: An Explainable, Uncertainty-Aware Agricultural Decision Support System''} is a bonafide work carried out by us under the guidance of \textbf{Monisha H M}, Assistant Professor, Department of Computer Science and Engineering, B.M.S. College of Engineering, Bengaluru, in partial fulfillment of the requirements of the degree of Bachelor of Engineering in Computer Science and Engineering of Visvesvaraya Technological University, Belagavi.
+
+We further declare that, to the best of our knowledge and belief, this project has not been submitted either in part or in full to any other university for the award of any degree.
+
+\vspace{0.3cm}
+\begin{flushleft}Candidate details:\end{flushleft}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|l|c|c|}
+\hline
+\textbf{Sl.~No.} & \textbf{Student Name} & \textbf{USN} & \textbf{Signature} \\
+\hline
+1 & Bramha Anilkumar Bajannavar & 1BM23CS038 & \\
+\hline
+2 & Daivya Priyankkumar Shah & 1BM23CS\textless USN\textgreater & \\
+\hline
+3 & Bhavya J Makadia & 1BM23CS\textless USN\textgreater & \\
+\hline
+4 & Hitesh Sharma & 1BM23CS\textless USN\textgreater & \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{flushleft}
+Place: Bengaluru \\
+Date:
+\end{flushleft}
+
+Certified that these candidates are students of Computer Science and Engineering, B.M.S.\ College of Engineering, and have carried out this Major Project Phase-2 work in partial fulfillment for the award of the B.E.\ degree by VTU. The work is original.
+
+\vspace{1cm}
+\begin{flushleft}
+Guide Name: Monisha H M \\
+Date: \\
+Signature:
+\end{flushleft}
+
+% ============================================================
+%  ACKNOWLEDGMENT
+% ============================================================
+\chapter*{Acknowledgment}
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{Acknowledgment}
+
+We express our sincere gratitude to \textbf{Monisha H M}, Assistant Professor, Department of Computer Science and Engineering, B.M.S. College of Engineering, for her invaluable guidance, continuous support, and constructive feedback throughout the development of this project.
+
+We thank \textbf{Dr.~Kavitha Sooda}, Head of Department, Computer Science and Engineering, and \textbf{Dr.~Bheemsha Arya}, Principal, B.M.S.\ College of Engineering, for providing the necessary infrastructure and an inspiring academic environment.
+
+We are grateful to all faculty members of the CSE Department and to the open-source community behind PyTorch, scikit-learn, FastAPI, Streamlit, and the many other libraries that made this project possible. We also thank our families and friends for their encouragement throughout this endeavor.
+
+\newpage
+\tableofcontents\thispagestyle{empty}\newpage
+\listoffigures\thispagestyle{empty}\newpage
+\listoftables\thispagestyle{empty}
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% ============================================================
+%  CHAPTER 1: INTRODUCTION
+% ============================================================
+\chapter{Introduction}
+
+\section{Overview}
+Agriculture forms the backbone of the Indian economy, employing approximately 42\% of the workforce and contributing around 17\% to GDP (2023). Despite its centrality, the sector suffers from persistent challenges: undiagnosed crop diseases, suboptimal crop selection due to limited soil knowledge, and unpredictable yield variability. Early and accurate identification of plant diseases alone can prevent losses estimated at 10--16\% of global crop production annually \cite{savary2019global}.
+
+CropAI addresses these challenges through a unified, AI-powered decision support platform providing three complementary tools: (1)~an image-based crop disease diagnostic, (2)~a soil-parameter-driven crop recommender, and (3)~a yield forecasting module with statistically valid uncertainty intervals. The system is accessible via a browser-based web interface requiring no local software installation.
+
+\section{Motivation}
+The proliferation of affordable smartphones combined with cloud-based inference presents a practical opportunity to deliver ML-powered agricultural guidance at the last mile. However, most existing ML systems for agriculture suffer from two critical gaps:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Lack of transparency.} Black-box predictions are not actionable for farmers who need to understand \emph{why} a disease was flagged or \emph{which} soil parameter is limiting their crop recommendation.
+  \item \textbf{Lack of calibrated uncertainty.} Systems that provide only point predictions give no indication of when the model is operating outside its reliable range.
+\end{enumerate}
+CropAI is motivated by the need to close these gaps: to deliver ML predictions that are not only accurate but also explainable and uncertainty-aware.
+
+\section{Objective}
+\begin{enumerate}[leftmargin=*]
+  \item Develop and evaluate three independent ML pipelines for crop disease classification, crop recommendation, and yield prediction.
+  \item Integrate explainability mechanisms (Grad-CAM, SHAP) into each pipeline to provide actionable, human-interpretable explanations.
+  \item Incorporate uncertainty quantification (MC Dropout, Platt scaling, split conformal prediction) to provide reliable confidence signals.
+  \item Build a production-ready containerized web service with FastAPI backend and Streamlit frontend, exposing all three modules via validated REST API endpoints.
+  \item Evaluate rigorously on held-out test sets and document limitations honestly.
+\end{enumerate}
+
+\section{Scope}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Disease module:} 38 disease/healthy classes across 14 crop species from PlantVillage; inference on JPEG/PNG leaf images.
+  \item \textbf{Crop recommendation:} 22 crop classes from seven soil/environmental parameters (N, P, K, temperature, humidity, pH, rainfall).
+  \item \textbf{Yield prediction:} Indian state-level data, predictions in tonnes/ha with conformal intervals.
+  \item \textbf{Deployment:} Single-machine Docker Compose. Cloud deployment is out of scope for Phase 2.
+  \item \textbf{Out of scope:} IoT sensor integration, mobile native app, multi-language UI, user authentication.
+\end{itemize}
+
+\section{SDG Justification}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{SDG 2 (Zero Hunger):} Improves crop disease detection, crop selection, and yield forecasting, contributing to food security.
+  \item \textbf{SDG 9 (Industry, Innovation and Infrastructure):} Demonstrates responsible AI innovation in food production.
+  \item \textbf{SDG 12 (Responsible Consumption and Production):} Explainable AI and uncertainty quantification promote informed, responsible agricultural decisions.
+\end{itemize}
+
+\section{Existing System}
+Existing agricultural ML tools are typically single-purpose and opaque:
+\begin{itemize}[leftmargin=*]
+  \item The PlantVillage mobile app provides disease identification but offers no explainability or uncertainty.
+  \item Proprietary tools (e.g., KrishiGuru, Cropin) do not expose per-prediction explanations.
+  \item Government portals (e.g., Fasal Bima Yojana) provide aggregate yield statistics but no per-farm prediction with uncertainty bounds.
+  \item Academic systems \cite{mohanty2016using, pudumalar2017crop, khaki2020crop} provide isolated module results without integrated deployment.
+\end{itemize}
+
+\section{Proposed System}
+CropAI proposes an integrated, multi-module agricultural decision support system with:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Three-in-one platform:} Disease diagnosis, crop recommendation, and yield prediction in a single unified interface.
+  \item \textbf{Explainability-first design:} Every prediction is accompanied by a Grad-CAM heatmap or SHAP bar chart.
+  \item \textbf{Calibrated uncertainty:} Every prediction includes a confidence score or statistically valid interval.
+  \item \textbf{API-first architecture:} Versioned REST endpoints with Pydantic-validated schemas for third-party integration.
+  \item \textbf{Open and reproducible:} All training scripts, configs, and model artifacts included in the repository.
+\end{enumerate}
+
+\section{Work Plan}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Project Work Plan}
+\label{tab:workplan}
+\begin{tabular}{|c|L{6.5cm}|L{4cm}|}
+\hline
+\textbf{Phase} & \textbf{Activity} & \textbf{Duration} \\
+\hline
+1 & Problem definition, literature survey, dataset collection & Weeks 1--3 \\
+\hline
+2 & Data preprocessing and exploratory analysis & Weeks 4--5 \\
+\hline
+3 & Disease module: training, Grad-CAM, MC Dropout & Weeks 6--8 \\
+\hline
+4 & Crop module: training, calibration, SHAP & Weeks 9--10 \\
+\hline
+5 & Yield module: training, conformal prediction, SHAP & Weeks 11--12 \\
+\hline
+6 & FastAPI backend development and API integration & Weeks 13--14 \\
+\hline
+7 & Streamlit frontend development & Weeks 15--16 \\
+\hline
+8 & Docker containerization and integration testing & Week 17 \\
+\hline
+9 & Evaluation, result analysis, report writing & Weeks 18--20 \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  CHAPTER 2: LITERATURE SURVEY
+% ============================================================
+\chapter{Literature Survey}
+
+\section{Overview}
+This chapter surveys prior work in four areas relevant to CropAI: (1)~crop disease detection using deep learning, (2)~crop recommendation systems, (3)~crop yield prediction, and (4)~explainable AI and uncertainty quantification in agricultural applications.
+
+\section{Detailed Survey}
+
+\subsection{Crop Disease Detection Using Deep Learning}
+Mohanty et al.\ \cite{mohanty2016using} demonstrated that CNN architectures trained on the PlantVillage dataset \cite{hughes2015open} can achieve accuracies exceeding 99\% under controlled laboratory conditions. Transfer learning from ImageNet \cite{deng2009imagenet} has since become the dominant paradigm \cite{too2019comparative}. Howard et al.\ \cite{howard2019searching} introduced MobileNetV3, a lightweight architecture optimized for mobile and edge devices; CropAI adopts MobileNetV3-Small for its favorable accuracy-to-latency trade-off. A critical limitation identified by Barbedo \cite{barbedo2018factors} is significant performance degradation when models trained on PlantVillage are evaluated on field-captured images with variable lighting and background---a gap not fully addressed by CropAI.
+
+\subsection{Crop Recommendation Systems}
+Pudumalar et al.\ \cite{pudumalar2017crop} applied Random Forest, Naive Bayes, and SVM to recommend crops from soil characteristics, demonstrating strong ensemble performance. Kalimuthu et al.\ \cite{kalimuthu2020crop} used ensemble methods on the Kaggle Crop Recommendation dataset---the same dataset used in CropAI---and reported near-perfect accuracy, attributing this to the high feature separability of the dataset.
+
+\subsection{Crop Yield Prediction}
+Khaki and Wang \cite{khaki2020crop} surveyed ML approaches for crop yield prediction. Jeong et al.\ \cite{jeong2016random} applied Random Forests to global crop yield prediction and reported strong predictive performance when features included weather, soil, and area covariates. Conformal prediction \cite{vovk2005algorithmic, shafer2008tutorial} provides distribution-free finite-sample coverage guarantees; Papadopoulos et al.\ \cite{papadopoulos2002inductive} introduced the efficient split conformal variant adopted by CropAI.
+
+\subsection{Explainable AI in Agriculture}
+Arrieta et al.\ \cite{arrieta2020explainable} provided a comprehensive taxonomy of XAI methods and argued for their necessity in high-stakes domains. Selvaraju et al.\ \cite{selvaraju2017grad} proposed Grad-CAM, producing class-discriminative spatial heatmaps for CNN outputs without architectural modifications. Lundberg and Lee \cite{lundberg2017unified} proposed SHAP, unifying feature attribution under a Shapley-value framework. Lundberg et al.\ \cite{lundberg2020local2global} further introduced TreeSHAP, an exact and efficient variant for tree-based models used by CropAI.
+
+\subsection{Uncertainty Quantification}
+Gal and Ghahramani \cite{gal2016dropout} showed that dropout at test time provides approximate Bayesian uncertainty estimates. Guo et al.\ \cite{guo2017calibration} demonstrated modern deep networks are overconfident and evaluated Platt scaling \cite{platt1999probabilistic} as an effective calibration correction. Zadrozny and Elkan \cite{zadrozny2002transforming} proposed isotonic regression as an alternative non-parametric calibration approach.
+
+\section{Research Gap Identification}
+\begin{enumerate}[leftmargin=*]
+  \item Most agricultural ML systems are single-purpose and do not provide an integrated platform for multiple tasks.
+  \item Explainability is rarely incorporated as a first-class feature; most systems report accuracy without user-facing explanations.
+  \item Uncertainty quantification with formal statistical guarantees (e.g., conformal prediction) is largely absent from deployed agricultural ML systems.
+  \item End-to-end deployment via a containerized web service with REST APIs is uncommon in published agricultural ML literature.
+\end{enumerate}
+
+\section{Mapping of Objectives with Research Gap Identification}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Mapping of Project Objectives to Identified Research Gaps}
+\label{tab:gap_mapping}
+\begin{tabular}{|c|L{5cm}|L{5.5cm}|}
+\hline
+\textbf{Gap} & \textbf{Research Gap} & \textbf{CropAI Response} \\
+\hline
+1 & Single-purpose tools, multiple disconnected systems & Unified three-module platform (disease + crop + yield) \\
+\hline
+2 & Black-box predictions; no explanations & Grad-CAM (images) + SHAP (tabular) on every endpoint \\
+\hline
+3 & No formal uncertainty quantification & MC Dropout, Platt calibration, split conformal prediction \\
+\hline
+4 & No production-ready deployment & FastAPI + Streamlit + Docker Compose containerized deployment \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  CHAPTER 3: SOFTWARE AND HARDWARE REQUIREMENT SPECIFICATION
+% ============================================================
+\chapter{Software and Hardware Requirement Specification}
+
+\section{Functional Requirements}
+\begin{enumerate}[leftmargin=*]
+  \item Accept leaf image upload; return predicted disease class, confidence, Grad-CAM heatmap, and MC Dropout reliability score.
+  \item Accept seven soil/environmental parameters; return ranked crop recommendations with SHAP feature attributions.
+  \item Accept crop, state, season, and area; return predicted yield in tonnes/ha with conformal interval and SHAP explanation.
+  \item Expose all three modules via REST API endpoints with JSON request/response payloads.
+  \item Provide a separate frontend page per module with input forms, prediction display, and explanation visualization.
+  \item Provide a health-check endpoint reporting loaded status of all three models.
+  \item Validate all API inputs against defined ranges before passing to model inference.
+\end{enumerate}
+
+\section{Non-Functional Requirements}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Performance:} Disease inference $<250$\,ms; crop and yield inference $<100$\,ms per request.
+  \item \textbf{Reliability:} All three models loaded and serving on container startup; exception handlers prevent stack-trace exposure.
+  \item \textbf{Reproducibility:} Fixed random seeds (42); preprocessing artifacts serialized alongside model weights.
+  \item \textbf{Portability:} Docker Compose deployment; no host-specific dependencies.
+  \item \textbf{Maintainability:} Modular codebase with separate packages per module; versioned API routes.
+  \item \textbf{Security:} Pydantic-validated inputs prevent injection of unexpected data types or out-of-range values.
+\end{enumerate}
+
+\section{Hardware Requirements}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Hardware Requirements}
+\label{tab:hw_req}
+\begin{tabular}{|L{4cm}|L{9cm}|}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+Processor & Intel Core i5 / AMD Ryzen 5 or equivalent (minimum); GPU optional but recommended for disease model training \\
+\hline
+RAM & 8~GB minimum (16~GB recommended for training) \\
+\hline
+Storage & 20~GB free disk space for datasets, model artifacts, and Docker images \\
+\hline
+GPU (training) & CUDA-capable NVIDIA GPU (optional); Apple Silicon MPS also supported \\
+\hline
+Network & Internet access for dataset download and package installation \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Software Requirements}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Software Requirements}
+\label{tab:sw_req}
+\begin{tabular}{|L{4cm}|L{4.5cm}|L{3cm}|}
+\hline
+\textbf{Category} & \textbf{Tool / Library} & \textbf{Version} \\
+\hline
+Operating System & Ubuntu 20.04+ / macOS 12+ / Windows 10+ & -- \\
+\hline
+Programming Language & Python & 3.10+ \\
+\hline
+Deep Learning & PyTorch + torchvision & 2.0+ \\
+\hline
+ML Framework & scikit-learn & 1.3+ \\
+\hline
+Explainability & SHAP & 0.44+ \\
+\hline
+API Framework & FastAPI + Uvicorn & 0.100+ \\
+\hline
+Frontend & Streamlit & 1.28+ \\
+\hline
+Containerization & Docker \& Docker Compose & 24+ / 2.20+ \\
+\hline
+Data Processing & NumPy, Pandas & 1.24+, 2.0+ \\
+\hline
+Image Processing & Pillow & 10+ \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Cost Estimation}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Project Cost Estimation}
+\label{tab:cost}
+\begin{tabular}{|L{9cm}|r|}
+\hline
+\textbf{Item} & \textbf{Cost (INR)} \\
+\hline
+Hardware (personal laptops, already owned) & 0 \\
+\hline
+Cloud compute (used local hardware) & 0 \\
+\hline
+Dataset access (open-source / Kaggle) & 0 \\
+\hline
+Open-source libraries and frameworks & 0 \\
+\hline
+Domain / hosting (local deployment for Phase 2) & 0 \\
+\hline
+\textbf{Total} & \textbf{0} \\
+\hline
+\end{tabular}
+\end{table}
+
+All software components used in CropAI are open-source. Training was performed on personal hardware. Total project cost is nil.
+
+% ============================================================
+%  CHAPTER 4: DESIGN
+% ============================================================
+\chapter{Design}
+
+\section{High Level Design}
+CropAI follows a three-tier architecture:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Presentation Tier:} Streamlit multi-page web application. Users interact with input forms and receive prediction results, explanation visualizations, and uncertainty indicators.
+  \item \textbf{Application Tier:} FastAPI backend. Routes requests to the appropriate ML service, performs input validation, executes inference, generates explanations, computes uncertainty, and returns structured JSON.
+  \item \textbf{Data/Model Tier:} Serialized model artifacts (PyTorch \texttt{.pth}, scikit-learn \texttt{.pkl}), preprocessing artifacts (scalers, encoders, class mappings), and calibration data loaded into memory at startup.
+\end{enumerate}
+
+\section{System Architecture}
+
+\begin{figure}[h!]
+\centering
+\setlength{\fboxsep}{8pt}
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering
+\textbf{CropAI -- High-Level System Architecture}\\[6pt]
+\small
+\textbf{Browser} $\rightarrow$ \textbf{Streamlit Frontend} (Port 8501)\\[4pt]
+\hfill $\downarrow$ HTTP REST \hfill \phantom{x}\\[4pt]
+\textbf{FastAPI Backend} (Port 8000)\\[6pt]
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Disease Service} & \textbf{Crop Service} & \textbf{Yield Service} \\
+\hline
+MobileNetV3-Small & Calibrated RF & RF Regressor \\
+Grad-CAM & SHAP TreeExplainer & SHAP TreeExplainer \\
+MC Dropout & Platt Scaling & Conformal Intervals \\
+\hline
+\end{tabular}\\[6pt]
+$\downarrow \quad \downarrow \quad \downarrow$\\[4pt]
+\texttt{artifacts/} (model weights, preprocessors, calibration data)
+\end{minipage}}
+\caption{CropAI high-level system architecture: decoupled Streamlit frontend and FastAPI backend with three independent ML service modules.}
+\label{fig:architecture}
+\end{figure}
+
+\section{Use-Case Diagram}
+\textbf{Actor: Farmer / User}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{UC-01 -- Diagnose Crop Disease:} Upload a leaf image; receive disease class, confidence, Grad-CAM heatmap, and reliability score.
+  \item \textbf{UC-02 -- Get Crop Recommendation:} Enter soil and climate parameters; receive top crop recommendations with SHAP feature importance.
+  \item \textbf{UC-03 -- Predict Crop Yield:} Enter crop, state, season, and area; receive predicted yield with conformal interval and SHAP explanation.
+\end{itemize}
+\textbf{Actor: System Administrator}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{UC-04 -- Check System Health:} Call health endpoint; receive model loading status for all three services.
+\end{itemize}
+
+\section{Class Diagram}
+The major service classes and their key methods are:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{DiseaseService:} \texttt{load\_model()}, \texttt{preprocess(image)}, \texttt{predict(image)}, \texttt{gradcam(image)}, \texttt{mc\_dropout\_uncertainty(image)}
+  \item \textbf{CropService:} \texttt{load\_model()}, \texttt{preprocess(features)}, \texttt{predict(features)}, \texttt{shap\_explain(features)}
+  \item \textbf{YieldService:} \texttt{load\_model()}, \texttt{preprocess(features)}, \texttt{predict(features)}, \texttt{conformal\_interval(features)}, \texttt{shap\_explain(features)}
+  \item \textbf{CropRequest (Pydantic):} nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall
+  \item \textbf{YieldRequest (Pydantic):} state, crop, season, area
+  \item \textbf{DiseaseResponse:} predicted\_class, confidence, top5\_predictions, reliability\_score, gradcam\_image\_b64
+  \item \textbf{CropResponse:} recommended\_crop, confidence, top3\_recommendations, shap\_values
+  \item \textbf{YieldResponse:} predicted\_yield, lower\_bound, upper\_bound, shap\_values
+\end{itemize}
+
+\section{Sequence Diagram}
+Disease prediction flow (representative of all three modules):
+\begin{enumerate}[leftmargin=*]
+  \item User uploads leaf image via Streamlit frontend.
+  \item Streamlit sends \texttt{POST /api/v1/disease/predict} multipart request to FastAPI.
+  \item FastAPI validates and passes image bytes to \texttt{DiseaseService}.
+  \item \texttt{DiseaseService} preprocesses image (resize $\to$ centre-crop $\to$ normalize to ImageNet statistics).
+  \item 10 MC Dropout forward passes through MobileNetV3-Small; logits averaged $\to$ softmax.
+  \item Grad-CAM computed for predicted class; heatmap upsampled and base64-encoded.
+  \item \texttt{DiseaseResponse} JSON returned to Streamlit.
+  \item Streamlit displays disease name, confidence bar, heatmap overlay, and reliability indicator.
+\end{enumerate}
+
+% ============================================================
+%  CHAPTER 5: IMPLEMENTATION
+% ============================================================
+\chapter{Implementation}
+
+\section{Overview of Technologies Used}
+
+\subsection{Disease Diagnosis Module}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Model:} MobileNetV3-Small (\texttt{torchvision.models.mobilenet\_v3\_small}) pretrained on ImageNet; final classification head replaced with a linear layer mapping to 38 outputs.
+  \item \textbf{Training:} AdamW optimizer, $\text{lr}=3\times10^{-4}$, weight decay $10^{-4}$, cosine annealing LR schedule, cross-entropy loss with label smoothing $\epsilon=0.1$, 5~epochs, batch size~64.
+  \item \textbf{Augmentation:} RandomResizedCrop (scale 0.7--1.0), RandomHorizontalFlip, ColorJitter.
+  \item \textbf{Explainability:} Grad-CAM targeting the last convolutional block via gradient hooks.
+  \item \textbf{Uncertainty:} MC Dropout ($T=10$ stochastic forward passes); predictive entropy normalized by $\log_2(38)$.
+\end{itemize}
+
+\subsection{Crop Recommendation Module}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Model:} \texttt{RandomForestClassifier}, 500~estimators, balanced class weights.
+  \item \textbf{Preprocessing:} StandardScaler fit on training data only; applied to all 7 numeric features.
+  \item \textbf{Calibration:} \texttt{CalibratedClassifierCV} with \texttt{method='sigmoid'} (Platt scaling), fit on validation partition; base estimator frozen.
+  \item \textbf{Explainability:} SHAP \texttt{TreeExplainer} on the base (uncalibrated) Random Forest; Shapley values for each of the 7 input features.
+\end{itemize}
+
+\subsection{Yield Prediction Module}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Model:} \texttt{RandomForestRegressor}, 150~estimators, max depth~14, min samples leaf~2; wrapped in a \texttt{Pipeline} with \texttt{OneHotEncoder} for categorical features and \texttt{StandardScaler} for area.
+  \item \textbf{Target Transform:} $y' = \log(1+y)$; back-transformed via $\hat{y} = e^{\hat{y}'} - 1$.
+  \item \textbf{Uncertainty:} Split conformal prediction; conformity scores = absolute residuals on calibration partition; 90\% nominal coverage.
+  \item \textbf{Explainability:} SHAP \texttt{TreeExplainer} on underlying regressor; values mapped to expanded one-hot feature names.
+\end{itemize}
+
+\subsection{Backend API (FastAPI)}
+\begin{itemize}[leftmargin=*]
+  \item Three API router groups: \texttt{/api/v1/disease/}, \texttt{/api/v1/crop/}, \texttt{/api/v1/yield/}.
+  \item Models loaded as singletons during application lifespan handler; Pydantic models validate all inputs.
+  \item CORS middleware; request logging middleware recording method, path, status, and latency.
+  \item Health endpoint \texttt{GET /health} returns model loading status for all three services.
+\end{itemize}
+
+\subsection{Frontend (Streamlit)}
+\begin{itemize}[leftmargin=*]
+  \item Multi-page Streamlit application: Home, Disease Diagnosis, Crop Recommendation, Yield Prediction, About.
+  \item All backend communication via \texttt{requests} HTTP calls to the FastAPI backend.
+  \item Grad-CAM heatmap decoded from base64 and displayed inline; SHAP values rendered as bar charts.
+\end{itemize}
+
+\subsection{Containerization (Docker)}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{docker-compose.yml} defines two services: \texttt{api} (FastAPI, port~8000) and \texttt{frontend} (Streamlit, port~8501).
+  \item \texttt{Dockerfile} uses Python 3.10 slim base; installs requirements and copies model artifacts.
+  \item Volume mounts allow updating model artifacts without rebuilding the image.
+\end{itemize}
+
+\section{Implementation Details of Modules}
+
+\subsection{Disease Training Pipeline (\texttt{training/train\_disease.py})}
+\begin{enumerate}[leftmargin=*]
+  \item Load PlantVillage dataset from \texttt{data/raw/plantvillage/} using \texttt{ImageFolder}.
+  \item Stratified 70/15/15 split with fixed seed~42.
+  \item Initialize MobileNetV3-Small with pretrained weights; replace final layer.
+  \item Train for 5~epochs; checkpoint best model by validation accuracy.
+  \item Compute test-set metrics (accuracy, precision, recall, F1, ECE).
+  \item Save checkpoint to \texttt{artifacts/disease/model.pth}; class-to-index mapping to JSON.
+\end{enumerate}
+
+\subsection{Crop Training Pipeline (\texttt{training/train\_crop.py})}
+\begin{enumerate}[leftmargin=*]
+  \item Load and clean Crop Recommendation CSV; rename columns; fit StandardScaler on training split.
+  \item Train Random Forest (500~trees, balanced weights) on 70\% split.
+  \item Fit Platt calibration on 15\% validation split.
+  \item Compute test metrics; save calibrated model and scaler to \texttt{artifacts/crop/}.
+\end{enumerate}
+
+\subsection{Yield Training Pipeline (\texttt{training/train\_yield.py})}
+\begin{enumerate}[leftmargin=*]
+  \item Load India Crop Production CSV; clean nulls; derive yield = production/area; filter zero-area records.
+  \item Temporal split: train on all years before penultimate year; validate on penultimate; test on most recent.
+  \item Log-transform target; fit Pipeline (OHE + StandardScaler + Random Forest Regressor).
+  \item Compute split conformal quantile on calibration set residuals.
+  \item Save Pipeline, conformal quantile, and metadata to \texttt{artifacts/yield/}.
+\end{enumerate}
+
+\section{Challenges Encountered and Strategies Used to Tackle}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Implementation Challenges and Mitigation Strategies}
+\label{tab:challenges}
+\begin{tabular}{|L{5.5cm}|L{7cm}|}
+\hline
+\textbf{Challenge} & \textbf{Strategy} \\
+\hline
+Grad-CAM hook compatibility with MobileNetV3 (adaptive pooling before target layer) & Identified correct target layer (\texttt{features[-1]}) via architectural inspection; registered forward and backward hooks on this module \\
+\hline
+SHAP TreeExplainer incompatibility with \texttt{CalibratedClassifierCV} & Extracted base (uncalibrated) estimator from calibrated wrapper; applied TreeExplainer to it directly \\
+\hline
+Yield target skewness causing high RMSE for high-yield crops & Applied $\log(1+y)$ target transform; trained on log scale; back-transformed predictions \\
+\hline
+Streamlit merge conflict markers in frontend code & Identified \texttt{<<<< HEAD} conflict markers; resolved by selecting intended code block \\
+\hline
+Model artifact loading latency on API startup & Used FastAPI lifespan handler to load all models once at startup as module-level singletons \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  CHAPTER 6: TESTING AND EXPERIMENTAL ANALYSIS
+% ============================================================
+\chapter{Testing and Experimental Analysis and Results}
+
+\section{Unit Testing}
+Unit tests in \texttt{tests/} cover:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Model service loading:} All three services load without error and expose expected inference methods.
+  \item \textbf{Input validation:} Out-of-range Pydantic inputs (e.g., pH $>14$, negative nitrogen) raise 422 errors.
+  \item \textbf{Preprocessing:} Disease pipeline produces tensors of shape $1\times3\times224\times224$ from arbitrary JPEG inputs.
+  \item \textbf{Conformal interval:} Lower bound is clamped to zero for near-zero predictions.
+  \item \textbf{SHAP output:} SHAP values list length equals number of input features.
+\end{itemize}
+
+\section{Integration Testing}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{POST /api/v1/disease/predict} with a sample leaf image returns HTTP~200 with \texttt{predicted\_class}, \texttt{confidence}, and \texttt{gradcam\_image\_b64}.
+  \item \texttt{POST /api/v1/crop/recommend} with valid soil parameters returns HTTP~200 with \texttt{recommended\_crop} and non-empty \texttt{shap\_values}.
+  \item \texttt{POST /api/v1/yield/predict} with valid parameters returns HTTP~200 with \texttt{predicted\_yield}, \texttt{lower\_bound}, and \texttt{upper\_bound} where lower $\leq$ predicted $\leq$ upper.
+  \item \texttt{GET /health} returns HTTP~200 with \texttt{"disease": true, "crop": true, "yield": true}.
+\end{itemize}
+
+\section{Experimental Dataset}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Summary of Datasets Used in CropAI}
+\label{tab:datasets}
+\begin{tabular}{|L{2.5cm}|L{5cm}|L{3cm}|C{2cm}|}
+\hline
+\textbf{Module} & \textbf{Dataset} & \textbf{Samples} & \textbf{Classes} \\
+\hline
+Disease & PlantVillage (colour) & $\sim$54,000 images & 38 \\
+\hline
+Crop Rec. & Kaggle Crop Recommendation & 2,200 rows & 22 \\
+\hline
+Yield & India Crop Production (Kaggle) & $\sim$247,000 rows & Continuous \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\textbf{PlantVillage:} $\sim$54,000 colour leaf images, 38 classes across 14 crop species, controlled laboratory conditions. Split 70/15/15 (train/val/test), stratified, seed~42.
+
+\noindent\textbf{Kaggle Crop Recommendation:} 2,200 samples, 7 numeric features, 22 balanced crop classes (100 samples each). Split 70/15/15 stratified.
+
+\noindent\textbf{India Crop Production:} District-level agricultural records across Indian states. After cleaning, yield = production/area. Features: state, crop, season (categorical), area (numeric). Temporal split: train on all years before penultimate year; validate on penultimate; test on most recent.
+
+\section{Performance Analysis}
+
+\subsection{Disease Classification Results}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Disease Classification Module~-- Test Set Performance}
+\label{tab:disease_results}
+\begin{tabular}{|L{7.5cm}|r|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Test Accuracy & 0.9917~(99.17\%) \\
+\hline
+Macro Precision & 0.9902 \\
+\hline
+Macro Recall & 0.9810 \\
+\hline
+Macro F1 Score & 0.9846 \\
+\hline
+Best Validation Accuracy & 0.9925 \\
+\hline
+Expected Calibration Error (ECE) & 0.1060 \\
+\hline
+Training Time (5 epochs) & $\sim$889~s \\
+\hline
+\end{tabular}
+\end{table}
+
+The MobileNetV3-Small model achieves 99.17\% test accuracy with macro F1 of 0.985 across all 38~classes. The ECE of 0.106 indicates moderate overconfidence in raw softmax outputs, motivating the complementary MC~Dropout uncertainty signal.
+
+\subsection{Crop Recommendation Results}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Crop Recommendation Module~-- Test Set Performance}
+\label{tab:crop_results}
+\begin{tabular}{|L{7.5cm}|r|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Test Accuracy & 1.0000~(100\%) \\
+\hline
+Macro Precision & 1.0000 \\
+\hline
+Macro Recall & 1.0000 \\
+\hline
+Macro F1 Score & 1.0000 \\
+\hline
+Top-3 Accuracy & 1.0000 \\
+\hline
+Top-5 Accuracy & 1.0000 \\
+\hline
+Expected Calibration Error (ECE) & 0.0755 \\
+\hline
+Training Time & $\sim$1.7~s \\
+\hline
+\end{tabular}
+\end{table}
+
+The calibrated Random Forest achieves perfect test accuracy on all 22~crop classes. This reflects the high feature separability of the Kaggle dataset and should not be extrapolated to real-world conditions. ECE of 0.075 indicates well-calibrated probabilities after Platt scaling.
+
+\subsection{Yield Prediction Results}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Yield Prediction Module~-- Test Set Performance}
+\label{tab:yield_results}
+\begin{tabular}{|L{7.5cm}|r|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+MAE (tonnes/ha) & 1.142 \\
+\hline
+RMSE (tonnes/ha) & 2.989 \\
+\hline
+$R^2$ (coefficient of determination) & 0.947 \\
+\hline
+Conformal Coverage (90\% nominal) & 0.948~(94.8\%) \\
+\hline
+Mean Conformal Interval Width (tonnes/ha) & 7.406 \\
+\hline
+Training Time & $\sim$451~s \\
+\hline
+\end{tabular}
+\end{table}
+
+The yield model explains 94.7\% of test-set variance ($R^2=0.947$). Conformal intervals achieve 94.8\% empirical coverage at 90\% nominal level, slightly above target---a conservative conservative overestimate consistent with discrete conformal quantile calculation.
+
+\subsection{Inference Latency}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{API Inference Latency (Observed from Server Logs)}
+\label{tab:latency}
+\begin{tabular}{|L{7.5cm}|r|}
+\hline
+\textbf{Endpoint} & \textbf{Typical Latency} \\
+\hline
+POST /api/v1/disease/predict (image) & 110--250~ms \\
+\hline
+POST /api/v1/crop/recommend (JSON) & 40--80~ms \\
+\hline
+POST /api/v1/yield/predict (JSON) & 48--95~ms \\
+\hline
+GET /health & $<$3~ms \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  CHAPTER 7: CONCLUSION AND FUTURE WORK
+% ============================================================
+\chapter{Conclusion and Future Work}
+
+\section{Conclusion}
+This project presented CropAI, a multi-module agricultural decision support system integrating crop disease diagnosis, crop recommendation, and yield prediction with systematic explainability and uncertainty quantification, deployed as a production-ready containerized web service.
+
+The key achievements are:
+\begin{enumerate}[leftmargin=*]
+  \item Three ML pipelines trained and evaluated on real open-source datasets: MobileNetV3-Small disease classifier (99.17\% test accuracy), calibrated Random Forest crop recommender (100\% test accuracy, ECE~0.075), and Random Forest yield predictor ($R^2=0.947$, 94.8\% conformal coverage).
+  \item Explainability integrated into every prediction endpoint: Grad-CAM heatmaps for disease; SHAP TreeExplainer for crop and yield.
+  \item Calibrated uncertainty via MC~Dropout (disease), Platt scaling (crop), and split conformal prediction intervals (yield).
+  \item End-to-end production deployment via FastAPI backend, Streamlit frontend, and Docker Compose containerization.
+\end{enumerate}
+
+The project demonstrates that state-of-the-art XAI and uncertainty quantification methods can be incorporated into an end-to-end serving system without prohibitive complexity, and that such features are essential for responsible deployment of agricultural AI.
+
+\section{Future Work}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Field-condition robustness:} Evaluate and retrain the disease model on field-captured datasets (e.g., PlantDoc) to quantify and reduce the lab-to-field accuracy gap.
+  \item \textbf{Expanded yield features:} Incorporate climate covariates (rainfall, temperature from ERA5/WorldClim), irrigation status, and fertilizer data.
+  \item \textbf{Baseline comparisons:} Systematic comparisons with EfficientNet, XGBoost, and LightGBM to justify model selection.
+  \item \textbf{Deep ensembles:} Replace or complement MC Dropout with deep ensemble methods for more robust epistemic uncertainty.
+  \item \textbf{OOD detection:} Implement energy-based or Mahalanobis-distance OOD detection to flag inputs outside the training distribution.
+  \item \textbf{Mobile application:} Package the disease inference module as a mobile-first app with on-device quantized inference for offline use.
+  \item \textbf{User study:} Conduct a structured user study with farmers and extension officers to evaluate practical utility of explainability and uncertainty features.
+\end{enumerate}
+
+% ============================================================
+%  REFERENCES
+% ============================================================
+\clearpage
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+% ============================================================
+%  APPENDICES
+% ============================================================
+\clearpage
+\appendix
+\renewcommand{\thechapter}{\Alph{chapter}}
+\renewcommand{\thesection}{\Roman{section}}
+
+\section{Appendix A: System Snapshots}
+\textit{[To be added: screenshots of the Streamlit frontend pages for Disease Diagnosis, Crop Recommendation, and Yield Prediction, including Grad-CAM overlays and SHAP bar charts.]}
+
+\clearpage
+\section{Appendix B: Details of Publications Related to This Project}
+\large{Author Names:} Bramha Anilkumar Bajannavar, Daivya Priyankkumar Shah, Bhavya J Makadia, Hitesh Sharma\\
+\large{Paper Title:} \textit{[To be added]}\\
+\large{Name of Conference or Journal:} \textit{[To be added]}\\
+\large{Place:} \textit{[To be added]}\\
+\large{Date:} \textit{[To be added]}
+
+\clearpage
+\section{Appendix C: Details of Patent}
+No patent has been filed for this project at this time.
+
+\clearpage
+\section{Appendix D: Details of Funding}
+This project was self-funded. No external funding was received.
+
+\clearpage
+\section{Appendix E: POs and PSOs Mapped}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{6pt}
+\caption{Programme Outcomes Mapping with Project}
+\label{tab:po_mapping}
+\begin{tabular}{|L{2.8cm}|c|L{8cm}|}
+\hline
+\textbf{Programme Outcome} & \textbf{Level} & \textbf{Justification} \\
+\hline
+PO1 (Engineering Knowledge) & 3 & Applies advanced ML, deep learning, and statistical inference to real agricultural problems. \\
+\hline
+PO2 (Problem Analysis) & 3 & Identifies and analyzes challenges of black-box prediction and uncalibrated uncertainty in agricultural AI. \\
+\hline
+PO3 (Design Solutions) & 3 & Designs a three-module system with explainability and uncertainty quantification meeting farmer needs. \\
+\hline
+PO4 (Investigations) & 3 & Rigorous experiments on three benchmark datasets; evaluates ECE, conformal coverage, and inference latency. \\
+\hline
+PO5 (Modern Tool Usage) & 3 & Uses PyTorch, scikit-learn, SHAP, FastAPI, Streamlit, Docker, and Git as modern engineering tools. \\
+\hline
+PO6 (Engineer \& Society) & 2 & Addresses food security and sustainable agriculture challenges for Indian farming communities. \\
+\hline
+PO7 (Environment) & 2 & Contributes to reduced pesticide misuse and optimized crop selection, supporting sustainability. \\
+\hline
+PO8 (Ethics) & 3 & Limitations explicitly documented; system disclaimers prevent over-reliance on AI predictions. \\
+\hline
+PO9 (Team Work) & 3 & Developed collaboratively by a four-member team with distributed module ownership. \\
+\hline
+PO10 (Communication) & 2 & OpenAPI/Swagger documentation; project report; Grad-CAM and SHAP visualizations. \\
+\hline
+PO11 (Project Management) & 2 & Structured work plan with phased milestones; version-controlled codebase via Git. \\
+\hline
+PO12 (Life-Long Learning) & 2 & Survey of recent literature (2015--2024); use of state-of-the-art XAI and UQ methods. \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{6pt}
+\caption{Programme Specific Outcomes Mapping with Project}
+\label{tab:pso_mapping}
+\begin{tabular}{|L{2.8cm}|c|L{8cm}|}
+\hline
+\textbf{PSO} & \textbf{Level} & \textbf{Justification} \\
+\hline
+PSO1 (Networks and Security) & 1 & Minimal; REST API uses HTTP with CORS middleware providing basic cross-origin security. \\
+\hline
+PSO2 (Software Engineering) & 3 & Applies software engineering best practices: modular design, Pydantic validation, Docker deployment, Git version control. \\
+\hline
+PSO3 (AI and Information Systems) & 3 & Integrates deep learning, tree ensembles, XAI (Grad-CAM, SHAP), and UQ (conformal prediction) into a unified information system. \\
+\hline
+\end{tabular}
+\end{table}
+
+\clearpage
+\section{Appendix F: Similarity Report and AI-Generated Content Report}
+\textit{[To be added: attach the plagiarism similarity report. Declare any AI-assisted writing along with sections affected and nature of assistance.]}
+
+\end{document}

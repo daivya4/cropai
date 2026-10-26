@@ -1,0 +1,25 @@
+models:
+  disease:
+    path: artifacts/disease/model.pt
+    metadata_path: artifacts/disease/metadata.json
+    class_mapping_path: artifacts/disease/class_mapping.json
+    preprocessing_path: artifacts/disease/preprocessing.json
+
+  crop:
+    path: artifacts/crop/model.pkl
+    scaler_path: artifacts/crop/scaler.pkl
+    metadata_path: artifacts/crop/metadata.json
+
+  crop_indian:
+    path: artifacts/crop_indian/model.pkl
+    metadata_path: artifacts/crop_indian/metadata.json
+
+  yield:
+    path: artifacts/yield/model.pkl
+    scaler_path: artifacts/yield/scaler.pkl
+    conformal_residuals_path: artifacts/yield/conformal_residuals.pkl
+    metadata_path: artifacts/yield/metadata.json
+
+api:
+  host: 0.0.0.0
+  port: 8000

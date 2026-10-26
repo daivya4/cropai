@@ -1,0 +1,622 @@
+% ═══════════════════════════════════════════════════════════════════
+% Survey Paper — Machine Learning in Agriculture
+% IEEE Journal Format — Comprehensive Literature Survey
+% Compiles cleanly in Overleaf with pdfLaTeX
+% ═══════════════════════════════════════════════════════════════════
+\documentclass[journal]{IEEEtran}
+
+% ── Packages ──────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{balance}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  breaklinks=true
+}
+
+% ── Custom column types for tables ────────────────────────────────
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% ── Title ─────────────────────────────────────────────────────────
+\title{Machine Learning for Agricultural Decision Support: A Comprehensive Survey of Crop Disease Detection, Crop Recommendation, Yield Prediction, Explainability, and Uncertainty Quantification}
+
+% ── Authors ────────────────────────────────────────────────────────
+\author{
+\IEEEauthorblockN{Monisha~H~M, Bramha~Anilkumar~Bajannavar, Daivya~Priyankkumar~Shah, Bhavya~J~Makadia, Hitesh~Sharma}
+\IEEEauthorblockA{Department of Computer Science and Engineering\\B.M.S. College of Engineering, Bengaluru, India\\
+\{monishahm.ise, bramhaanilkumar.cs23, daivya.cs23, bhavyaj.cs23, hiteshsharma.cs23\}@bmsce.ac.in}
+}
+
+\begin{document}
+
+\maketitle
+
+% ══════════════════════════════════════════════════════════════════
+% ABSTRACT
+% ══════════════════════════════════════════════════════════════════
+\begin{abstract}
+The application of machine learning to agriculture has expanded rapidly over the past decade, driven by advances in deep learning, the availability of large-scale datasets, and the proliferation of low-cost sensors and computing infrastructure.
+This survey provides a comprehensive review of the state of the art across five interconnected research areas that collectively underpin intelligent agricultural decision support systems: (1)~crop disease detection from leaf imagery using deep convolutional neural networks and vision transformers, (2)~crop recommendation based on soil and environmental parameters using ensemble and deep learning methods, (3)~crop yield prediction using tabular machine learning, remote sensing features, and hybrid deep learning architectures, (4)~explainable artificial intelligence (XAI) techniques---including Gradient-weighted Class Activation Mapping (Grad-CAM), SHapley Additive exPlanations (SHAP), and Local Interpretable Model-agnostic Explanations (LIME)---as applied to agricultural models, and (5)~uncertainty quantification methods---encompassing Monte Carlo Dropout, deep ensembles, post-hoc calibration, and conformal prediction---for producing reliable confidence estimates in agricultural predictions.
+For each area, we systematically review seminal works, trace the evolution of methodologies from traditional machine learning to modern deep learning approaches, present comparative analyses of architectures and performance benchmarks, and identify critical open challenges.
+We further examine the emerging trend toward integrated, multi-module agricultural platforms that unify disease diagnosis, crop selection, and yield forecasting within a single decision support framework.
+The survey identifies seven key research gaps---including the persistent laboratory-to-field generalization problem, limited real-world dataset availability, insufficient adoption of formal uncertainty quantification, and the absence of user-centric evaluation---and proposes corresponding future research directions.
+This review is intended to serve as a consolidated reference for researchers, practitioners, and policymakers working at the intersection of artificial intelligence and sustainable agriculture.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Agricultural Decision Support, Deep Learning, Plant Disease Detection, Crop Recommendation, Yield Prediction, Explainable AI, Uncertainty Quantification, Transfer Learning, Conformal Prediction, Precision Agriculture, Survey
+\end{IEEEkeywords}
+
+% ══════════════════════════════════════════════════════════════════
+% I. INTRODUCTION
+% ══════════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:introduction}
+
+Agriculture sustains the livelihoods of over one-third of the global workforce and provides the primary food supply for a world population projected to exceed 9.7~billion by 2050~\cite{fao2021state}. Despite its critical importance, agricultural productivity is under increasing pressure from multiple converging challenges: the global burden of plant diseases and pests, which accounts for an estimated 10--16\% loss of annual crop production~\cite{savary2019global}; the effects of climate variability on growing seasons, water availability, and soil health~\cite{lipper2014climate}; and the widening gap between available agronomic expertise and the rapidly growing population of smallholder farmers who depend on timely, accurate decision support~\cite{wolfert2017big}.
+
+Machine learning (ML) has emerged as a transformative technology for addressing these agricultural challenges. Over the past decade, the field has witnessed a proliferation of studies applying ML techniques---from classical ensemble methods to deep convolutional neural networks (CNNs) and, more recently, vision transformers---to tasks including crop disease identification, crop selection and recommendation, and yield forecasting~\cite{liakos2018machine,kamilaris2018deep}. These advances have been enabled by three concurrent developments: (i)~the public release of large-scale agricultural datasets such as PlantVillage~\cite{hughes2015open}, (ii)~the maturation of transfer learning paradigms that allow models pre-trained on massive image corpora to be fine-tuned for domain-specific tasks with limited labeled data~\cite{deng2009imagenet}, and (iii)~the decreasing cost of computational resources, including cloud-based GPU training and edge-capable inference hardware~\cite{chen2019deep}.
+
+However, the transition from promising research prototypes to deployed agricultural decision support systems that are trusted and used by farmers remains fraught with challenges. Three critical gaps persist across the literature:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{The generalization gap.} Models achieving near-perfect accuracy on benchmark datasets under controlled laboratory conditions frequently experience significant performance degradation when deployed under real-world field conditions characterized by variable lighting, complex backgrounds, occlusion, and diverse disease stages~\cite{barbedo2018factors,barbedo2019plant}.
+  
+  \item \textbf{The interpretability gap.} Most agricultural ML systems function as opaque ``black-box'' predictors, producing point estimates without transparently communicating the reasoning behind their outputs. In agriculture, where incorrect decisions carry real economic consequences and where end users possess substantial but informal domain expertise, the absence of explanations undermines trust and limits adoption~\cite{arrieta2020explainable,samek2021explaining}.
+  
+  \item \textbf{The reliability gap.} Standard classification and regression models produce confidence scores that are frequently miscalibrated---either overconfident or underconfident---without formal guarantees on prediction reliability. For risk-sensitive agricultural decisions, users require not only predictions but also principled uncertainty estimates that enable them to assess when a model's output should be trusted and when human expert judgment should be sought~\cite{guo2017calibration,abdar2021review}.
+\end{enumerate}
+
+Despite the large volume of individual studies addressing specific agricultural ML tasks, comprehensive surveys that span the full pipeline from disease detection through crop recommendation and yield prediction, while also covering the orthogonal dimensions of explainability and uncertainty quantification, remain scarce. Existing reviews tend to focus on single domains: plant disease detection~\cite{saleem2019plant,li2021review,thakur2022trends}, crop recommendation~\cite{pudumalar2017crop}, yield prediction~\cite{vanklompenburg2020crop,chlingaryan2018machine}, or general ML in agriculture~\cite{liakos2018machine,benos2021machine}. Few surveys systematically examine how explainability and uncertainty quantification techniques are being (or should be) integrated into these agricultural applications as essential system-level requirements rather than optional add-ons.
+
+\subsection{Scope and Contributions}
+
+This survey aims to fill this gap by providing a unified, cross-domain review of the state of the art. The primary contributions are as follows:
+
+\begin{itemize}[leftmargin=*]
+  \item A comprehensive review of crop disease detection methodologies, tracing the evolution from hand-crafted feature extractors through deep CNNs to modern hybrid CNN-transformer architectures, with systematic comparison of publicly available benchmark datasets and reported performance metrics.
+  
+  \item A critical analysis of ML-based crop recommendation systems, examining the algorithms, feature sets, and datasets used, with particular attention to the methodological concerns arising from the widespread use of small, clean benchmark datasets.
+  
+  \item A thorough survey of crop yield prediction approaches, covering tabular ML methods, remote sensing-based pipelines, and deep learning architectures for spatiotemporal yield modeling.
+  
+  \item A domain-specific review of explainable AI techniques---Grad-CAM, SHAP, LIME, and attention-based methods---as applied to agricultural contexts, evaluating their suitability for different model types and user audiences.
+  
+  \item An assessment of uncertainty quantification methods for agricultural ML, covering Bayesian approximation via MC~Dropout, deep ensembles, post-hoc calibration, and distribution-free conformal prediction.
+  
+  \item Identification of research gaps and a roadmap of future directions for building trustworthy, user-centric agricultural AI systems.
+\end{itemize}
+
+\subsection{Survey Organization}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:disease} surveys crop disease detection using deep learning. Section~\ref{sec:recommendation} reviews crop recommendation systems. Section~\ref{sec:yield} covers yield prediction approaches. Section~\ref{sec:xai} examines explainable AI techniques for agriculture. Section~\ref{sec:uncertainty} discusses uncertainty quantification methods. Section~\ref{sec:integrated} reviews integrated multi-module agricultural platforms. Section~\ref{sec:datasets} summarizes the key datasets and benchmarks used across these domains. Section~\ref{sec:challenges} identifies open challenges. Section~\ref{sec:future} proposes future research directions. Section~\ref{sec:conclusion} concludes the survey.
+
+
+% ══════════════════════════════════════════════════════════════════
+% II. CROP DISEASE DETECTION USING DEEP LEARNING
+% ══════════════════════════════════════════════════════════════════
+\section{Crop Disease Detection Using Deep Learning}
+\label{sec:disease}
+
+Automated identification of plant diseases from leaf images is one of the most extensively studied applications of deep learning in agriculture. This section reviews the evolution of methodologies, the dominant architectures, and the persistent challenges in this domain.
+
+\subsection{From Hand-Crafted Features to Deep Learning}
+
+Early approaches to plant disease classification relied on classical image processing techniques: segmentation of diseased regions using color-space thresholding, extraction of hand-crafted features such as color histograms, texture descriptors (e.g., Gray-Level Co-occurrence Matrices, Local Binary Patterns), and shape features, followed by classification using support vector machines (SVMs), k-nearest neighbors (k-NN), or decision trees~\cite{barbedo2018factors}. While effective for constrained scenarios with limited disease categories and controlled imaging conditions, these methods required substantial domain expertise for feature engineering and generalized poorly to new crops, diseases, or imaging environments.
+
+The seminal work by Mohanty~et~al.~\cite{mohanty2016using} demonstrated that deep CNNs trained end-to-end on the PlantVillage dataset~\cite{hughes2015open} could achieve classification accuracies exceeding 99\% across 38 disease and healthy categories spanning 14 crop species. This result catalyzed a rapid shift toward deep learning-based approaches that learn discriminative features directly from raw pixel data, eliminating the need for manual feature engineering.
+
+\subsection{Transfer Learning and Fine-Tuning Strategies}
+
+Transfer learning---pre-training a CNN on a large-scale general-purpose image dataset (typically ImageNet~\cite{deng2009imagenet}) and fine-tuning on a smaller domain-specific dataset---has become the dominant paradigm for plant disease classification. This approach addresses the limited size of agricultural image datasets by leveraging learned representations from millions of natural images.
+
+Too~et~al.~\cite{too2019comparative} conducted a systematic comparison of fine-tuning strategies across multiple architectures and found that models with deeper residual connections (e.g., ResNet~\cite{he2016deep}) and efficient scaling strategies (e.g., EfficientNet~\cite{tan2019efficientnet}) consistently outperformed shallower architectures. Ferentinos~\cite{ferentinos2018deep} evaluated five CNN architectures on the PlantVillage dataset and reported accuracies ranging from 97.8\% (AlexNet) to 99.5\% (VGGNet), demonstrating the general effectiveness of transfer learning for this task.
+
+Table~\ref{tab:disease_architectures} summarizes the key architectures applied to plant disease classification and their reported performance characteristics.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{Comparison of Deep Learning Architectures for Plant Disease Classification}
+  \label{tab:disease_architectures}
+  \begin{tabular}{L{2.8cm} C{1.5cm} C{1.8cm} C{1.8cm} L{5.5cm}}
+    \toprule
+    \textbf{Architecture} & \textbf{Parameters} & \textbf{Reported Accuracy} & \textbf{Model Size} & \textbf{Deployment Suitability} \\
+    \midrule
+    AlexNet~\cite{mohanty2016using} & $\sim$61M & 97.8--99.3\% & $\sim$240~MB & Legacy; superseded by modern architectures \\
+    VGGNet-16~\cite{simonyan2015very} & $\sim$138M & 98.7--99.5\% & $\sim$528~MB & High accuracy; too large for edge deployment \\
+    InceptionV3~\cite{szegedy2016rethinking} & $\sim$24M & 98.2--99.2\% & $\sim$92~MB & Moderate size; multi-scale feature extraction \\
+    ResNet-50~\cite{he2016deep} & $\sim$25M & 98.8--99.7\% & $\sim$98~MB & Strong baseline; robust feature learning \\
+    DenseNet-121~\cite{huang2017densely} & $\sim$8M & 98.5--99.4\% & $\sim$31~MB & Feature reuse; parameter-efficient \\
+    MobileNetV2/V3~\cite{sandler2018mobilenetv2,howard2019searching} & $\sim$3--5M & 97.9--99.2\% & $\sim$6--14~MB & Designed for mobile/edge deployment \\
+    EfficientNet-B0~\cite{tan2019efficientnet} & $\sim$5M & 99.0--99.6\% & $\sim$20~MB & Optimal accuracy-efficiency trade-off \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsection{Lightweight Architectures for Edge Deployment}
+
+A significant research trend since 2020 has been the development and evaluation of lightweight architectures suitable for deployment on mobile phones, embedded devices, and agricultural drones. Howard~et~al.~\cite{howard2019searching} introduced MobileNetV3, incorporating neural architecture search (NAS), squeeze-and-excitation modules, and hard-swish activations to achieve a favorable accuracy-to-latency trade-off. Sandler~et~al.~\cite{sandler2018mobilenetv2} proposed MobileNetV2 with inverted residual blocks and linear bottlenecks, reducing computational cost while maintaining representational capacity.
+
+In the agricultural context, lightweight models are particularly important because many end users operate in rural areas with limited internet connectivity, necessitating on-device inference. Studies have demonstrated that MobileNetV3-Small can achieve disease classification accuracy within 1--2 percentage points of much larger models (e.g., ResNet-50, VGGNet-16) while requiring 10--50$\times$ fewer parameters and running at significantly higher frame rates on mobile hardware.
+
+\subsection{Vision Transformers and Hybrid Architectures}
+
+The introduction of Vision Transformers (ViT) by Dosovitskiy~et~al.~\cite{dosovitskiy2021image} has prompted exploration of attention-based architectures for plant disease classification. Unlike CNNs, which capture local spatial patterns through convolutional kernels, ViTs process image patches as sequences and model global dependencies through self-attention mechanisms.
+
+Recent studies (2023--2025) have reported that hybrid CNN-ViT architectures---which use a CNN backbone for low-level feature extraction followed by transformer layers for global reasoning---can outperform pure CNN models, particularly for diseases that manifest as spatially distributed patterns rather than localized lesions. However, ViTs typically require larger training datasets and more computational resources than CNNs, which limits their current applicability in data-scarce agricultural settings.
+
+\subsection{Object Detection for In-Field Applications}
+
+Beyond image classification, object detection models from the YOLO (You Only Look Once) family~\cite{redmon2018yolov3,jocher2023yolov8} have been increasingly applied to plant disease detection in field conditions. Unlike classification models that assume a single leaf per image, detection models can localize and identify multiple disease instances within complex field images containing leaves, stems, soil, and other background elements.
+
+YOLOv8~\cite{jocher2023yolov8} has emerged as a widely adopted baseline for real-time agricultural disease detection due to its favorable speed-accuracy trade-off. Recent work has enhanced YOLO-based detectors with attention mechanisms (e.g., Coordinate Attention) and lightweight backbone substitutions (e.g., GhostNet modules) to enable deployment on edge devices without significant accuracy loss.
+
+\subsection{The Generalization Challenge}
+
+Despite consistently high benchmark accuracies, a well-documented challenge is the significant performance degradation observed when models trained on laboratory datasets (such as PlantVillage) are evaluated on field-captured images~\cite{barbedo2018factors,barbedo2019plant}. Barbedo~\cite{barbedo2018factors} identified several factors contributing to this gap, including (i)~the uniform backgrounds and controlled lighting in laboratory images versus the complex, cluttered backgrounds in field conditions, (ii)~the limited diversity of disease stages and severity levels in benchmark datasets, and (iii)~the absence of confounding factors such as nutrient deficiencies, insect damage, and environmental stress that can mimic disease symptoms.
+
+Singh~et~al.~\cite{singh2018plantdoc} introduced PlantDoc, a dataset of 2,598 images collected from the web under diverse conditions, and demonstrated that models trained exclusively on PlantVillage experienced accuracy drops of 20--35\% when evaluated on PlantDoc images. This finding underscores the urgent need for larger, more diverse, and realistically collected disease datasets, as well as domain adaptation techniques that can bridge the laboratory-to-field gap.
+
+
+% ══════════════════════════════════════════════════════════════════
+% III. CROP RECOMMENDATION SYSTEMS
+% ══════════════════════════════════════════════════════════════════
+\section{Crop Recommendation Systems}
+\label{sec:recommendation}
+
+Crop recommendation involves predicting the most suitable crop for a given combination of soil characteristics and environmental conditions. This section reviews the ML approaches, feature sets, and datasets that have been employed for this task.
+
+\subsection{Problem Formulation}
+
+Crop recommendation is typically formulated as a multi-class classification problem: given a feature vector $\mathbf{x} = [x_1, x_2, \ldots, x_d]$ comprising soil nutrient concentrations, soil pH, temperature, humidity, and rainfall measurements, the objective is to predict the crop class $c \in \{1, 2, \ldots, C\}$ that maximizes the expected yield or suitability for those conditions. The number of candidate crops $C$ varies across studies from 7 to over 40, depending on the regional scope and dataset used.
+
+\subsection{Feature Engineering and Data Sources}
+
+The feature sets used in crop recommendation studies can be categorized into three groups:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Soil parameters:} Nitrogen (N), Phosphorus (P), Potassium (K), organic carbon content, soil pH, and soil moisture. These are typically obtained through laboratory soil testing or estimated from spectroscopic analysis.
+  
+  \item \textbf{Environmental parameters:} Temperature (mean, minimum, maximum), relative humidity, annual or seasonal rainfall, and solar radiation. These are sourced from weather stations or reanalysis datasets.
+  
+  \item \textbf{Geographic and historical parameters:} District, state, or agro-climatic zone identifiers, historical crop yields, irrigation availability, and land use type. These provide contextual information about local agricultural practices.
+\end{itemize}
+
+The most widely used feature set in the recent literature comprises seven variables---N, P, K, temperature, humidity, pH, and rainfall---as standardized in the Kaggle Crop Recommendation dataset, which has become a \textit{de facto} benchmark for comparative studies~\cite{kalimuthu2020crop}.
+
+\subsection{Machine Learning Algorithms}
+
+Table~\ref{tab:crop_algorithms} summarizes the ML algorithms applied to crop recommendation and their typical reported accuracies.
+
+\begin{table}[htbp]
+  \centering
+  \caption{ML Algorithms for Crop Recommendation}
+  \label{tab:crop_algorithms}
+  \begin{tabular}{L{3.2cm} C{2.2cm} C{2cm}}
+    \toprule
+    \textbf{Algorithm} & \textbf{Typical Accuracy} & \textbf{References} \\
+    \midrule
+    Random Forest & 96--100\% & \cite{pudumalar2017crop,kalimuthu2020crop} \\
+    XGBoost & 95--99\% & \cite{chen2016xgboost} \\
+    LightGBM & 94--98\% & \cite{ke2017lightgbm} \\
+    SVM & 90--97\% & \cite{pudumalar2017crop} \\
+    k-NN & 88--96\% & \cite{rajak2017crop} \\
+    Na{\"i}ve Bayes & 85--93\% & \cite{pudumalar2017crop} \\
+    Logistic Regression & 82--95\% & \cite{bondre2019prediction} \\
+    Neural Networks (MLP) & 91--98\% & \cite{bondre2019prediction} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Tree-based ensemble methods, particularly Random Forest~\cite{breiman2001random}, consistently achieve the highest classification accuracies across studies. Pudumalar~et~al.~\cite{pudumalar2017crop} applied Random Forest, Na{\"i}ve Bayes, and SVM classifiers to recommend crops based on soil characteristics, with Random Forest achieving the best performance. Kalimuthu~et~al.~\cite{kalimuthu2020crop} reported near-perfect accuracy using ensemble methods on the Kaggle Crop Recommendation dataset.
+
+Gradient boosting methods, including XGBoost~\cite{chen2016xgboost} and LightGBM~\cite{ke2017lightgbm}, have emerged as strong alternatives, particularly when feature interactions are complex and the dataset is sufficiently large. However, for the commonly used small benchmark datasets ($\leq$5,000 samples), the performance differences between top-performing algorithms are often negligible.
+
+\subsection{Critical Assessment of Benchmark Datasets}
+
+A significant methodological concern in the crop recommendation literature is the heavy reliance on the Kaggle Crop Recommendation dataset, which contains only 2,200 samples (100 per class across 22 crops) with clean, perfectly balanced, and well-separated feature distributions. Studies using this dataset routinely report accuracies of 97--100\%, which likely reflects the high separability of the synthetic feature space rather than the difficulty of real-world crop selection.
+
+Several issues warrant attention: (i)~the dataset does not capture the measurement noise, missing values, and sensor calibration errors present in real-world soil testing, (ii)~the feature distributions across crops are artificially distinct, making classification trivially easy for ensemble methods, (iii)~the small sample size per class (100) is insufficient to represent the within-class variability of real agricultural conditions, and (iv)~the dataset lacks geographic specificity, temporal variation, and information about soil management practices. These limitations suggest that the high reported accuracies should be interpreted with caution, and that validation on larger, noisier, region-specific datasets is essential before deployment.
+
+\subsection{Emerging Trends}
+
+Recent developments (2023--2025) in crop recommendation include (i)~the integration of satellite-derived vegetation indices and multi-temporal remote sensing data to augment soil parameters, (ii)~multimodal approaches that combine structured tabular data with soil image classification, (iii)~context-aware recommendation systems that incorporate crop rotation constraints, market prices, and farmer preferences, and (iv)~the application of deep learning architectures, including neural networks with attention mechanisms, to model complex nonlinear relationships between environmental factors and crop suitability.
+
+
+% ══════════════════════════════════════════════════════════════════
+% IV. CROP YIELD PREDICTION
+% ══════════════════════════════════════════════════════════════════
+\section{Crop Yield Prediction}
+\label{sec:yield}
+
+Crop yield prediction---the estimation of crop production per unit area---is a regression task with direct applications in food security planning, agricultural insurance, commodity pricing, and policy design. This section surveys the methodological landscape, from traditional statistical models to modern deep learning architectures.
+
+\subsection{Traditional Statistical and ML Approaches}
+
+Classical approaches to yield prediction include regression models based on weather indices, process-based crop simulation models (e.g., DSSAT, APSIM), and statistical methods such as linear regression, ridge regression, and partial least squares. While process-based models encode agronomic knowledge about crop physiology, they require extensive parameterization and often underperform data-driven methods when historical data is abundant~\cite{peng2020assessing}.
+
+Among ML methods, tree-based ensemble approaches---Random Forest~\cite{breiman2001random,jeong2016random}, gradient boosting (XGBoost~\cite{chen2016xgboost}, LightGBM~\cite{ke2017lightgbm}), and extra-trees regressors---have demonstrated strong performance on tabular agricultural datasets with mixed feature types (categorical crop/region identifiers, continuous weather and soil variables). Jeong~et~al.~\cite{jeong2016random} applied Random Forests to global and regional yield predictions and achieved $R^2$ values ranging from 0.75 to 0.95, depending on the crop and spatial resolution.
+
+\subsection{Deep Learning for Yield Prediction}
+
+Deep learning architectures have been increasingly applied to yield prediction, particularly when leveraging high-dimensional input data such as satellite imagery or time-series weather records. The primary approaches include:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Convolutional Neural Networks (CNNs):} Applied to spatial data such as vegetation index maps derived from satellite imagery. CNNs can extract spatial patterns (e.g., crop health gradients, irrigation patterns) that correlate with yield outcomes~\cite{wang2020deep}.
+  
+  \item \textbf{Recurrent Neural Networks (RNNs/LSTMs):} Applied to temporal sequences of weather variables and phenological stage progression. Long Short-Term Memory (LSTM) networks can capture the temporal dependencies between growing-season conditions and final yield~\cite{khaki2020comprehensive}.
+  
+  \item \textbf{Hybrid CNN-LSTM architectures:} Combine spatial feature extraction via CNNs with temporal sequence modeling via LSTMs. These architectures process multi-temporal satellite image stacks and weather series simultaneously, achieving state-of-the-art results on spatiotemporal yield datasets.
+  
+  \item \textbf{Attention-enhanced models:} Attention mechanisms allow the model to selectively focus on the most yield-relevant time steps or spatial regions, improving both accuracy and interpretability of the temporal modeling.
+\end{itemize}
+
+Khaki and Wang~\cite{khaki2020comprehensive} provided a comprehensive comparison of deep learning architectures for US corn and soybean yield prediction, demonstrating that well-tuned deep learning models could outperform traditional ML baselines by 5--15\% in terms of RMSE reduction.
+
+\subsection{Feature Sources for Yield Prediction}
+
+Table~\ref{tab:yield_features} categorizes the input features commonly used in yield prediction studies.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Feature Categories for Crop Yield Prediction}
+  \label{tab:yield_features}
+  \begin{tabular}{L{2.4cm} L{5cm}}
+    \toprule
+    \textbf{Category} & \textbf{Features} \\
+    \midrule
+    Meteorological & Temperature, rainfall, humidity, solar radiation, wind speed \\
+    Soil & N, P, K, pH, organic carbon, moisture, texture \\
+    Remote Sensing & NDVI, EVI, LAI, NDWI, surface reflectance \\
+    Management & Irrigation type, fertilizer application, crop variety, planting date \\
+    Geospatial & Latitude, longitude, elevation, soil type, district/state \\
+    Temporal & Year, season, growing degree days \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The choice of input features significantly influences model performance and generalizability. Models relying solely on categorical identifiers (crop, region, season) and aggregate area statistics may achieve high in-sample $R^2$ values through memorization of historical averages, but lack the ability to capture interannual variability driven by weather anomalies. Incorporating weather and remote sensing variables typically improves predictive accuracy and enables the model to respond to novel conditions not seen during training~\cite{chlingaryan2018machine,weiss2020remote}.
+
+\subsection{Handling Distributional Challenges}
+
+Agricultural yield data exhibits several distributional properties that require careful preprocessing: (i)~right-skewed distributions due to the long tail of high-yield outliers, (ii)~heterogeneous variance across crop types (e.g., sugarcane yields in tonnes/ha are orders of magnitude larger than lentil yields), and (iii)~zero-inflated distributions in regions with crop failures. Common mitigation strategies include log-transformation of target variables, per-crop normalization, and robust loss functions (e.g., Huber loss).
+
+
+% ══════════════════════════════════════════════════════════════════
+% V. EXPLAINABLE AI IN AGRICULTURAL APPLICATIONS
+% ══════════════════════════════════════════════════════════════════
+\section{Explainable AI in Agricultural Applications}
+\label{sec:xai}
+
+Explainability is increasingly recognized as a necessary attribute for ML systems deployed in high-stakes agricultural contexts, where model outputs inform decisions with real economic and environmental consequences~\cite{arrieta2020explainable}. This section reviews the principal XAI techniques applied to agricultural models and evaluates their suitability for different use cases.
+
+\subsection{Taxonomy of XAI Methods}
+
+Explainability methods can be broadly categorized along two dimensions~\cite{linardatos2021explainable,samek2021explaining}:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Scope:} \textit{Global} methods explain the overall model behavior (e.g., feature importance rankings), while \textit{local} methods explain individual predictions.
+  
+  \item \textbf{Model dependence:} \textit{Model-specific} methods exploit the internal structure of particular model types (e.g., Grad-CAM for CNNs, TreeExplainer for tree ensembles), while \textit{model-agnostic} methods treat the model as a black box and can be applied to any predictor (e.g., LIME, KernelSHAP).
+\end{itemize}
+
+\subsection{Gradient-weighted Class Activation Mapping (Grad-CAM)}
+
+Grad-CAM~\cite{selvaraju2017grad} produces spatial attention heatmaps that highlight which regions of an input image contributed most to a CNN's prediction. For a target class $c$, the Grad-CAM heatmap is computed by weighting the activation maps of a target convolutional layer by the gradient of the class score with respect to those activations:
+\begin{equation}
+  L_{\text{Grad-CAM}}^{c} = \text{ReLU}\!\left(\sum_{k} \alpha_{k}^{c} \cdot A^{k}\right), \quad
+  \alpha_{k}^{c} = \frac{1}{Z} \sum_{i} \sum_{j} \frac{\partial y^{c}}{\partial A_{ij}^{k}}
+\end{equation}
+
+In plant disease detection, Grad-CAM has been widely adopted to verify that the model focuses on disease-relevant regions (lesions, spots, discoloration) rather than irrelevant background features. Several studies have demonstrated qualitatively that Grad-CAM heatmaps align with expert-annotated disease regions for common conditions such as late blight, bacterial spot, and leaf curl~\cite{saleem2019plant,thangaraj2021classification}. However, Grad-CAM outputs represent correlation-based spatial attention, not causal evidence of disease presence, and should be communicated to users with appropriate caveats.
+
+\subsection{SHAP (SHapley Additive exPlanations)}
+
+SHAP~\cite{lundberg2017unified,lundberg2020local2global} provides theoretically grounded feature attribution based on cooperative game theory. For a prediction $f(\mathbf{x})$, the SHAP values $\phi_j$ satisfy:
+\begin{equation}
+  f(\mathbf{x}) = \phi_0 + \sum_{j=1}^{d} \phi_j(\mathbf{x})
+\end{equation}
+where $\phi_0$ is the expected model output and each $\phi_j$ quantifies the contribution of feature $j$ to the deviation from the expected output.
+
+SHAP is particularly well-suited for agricultural tabular models (crop recommendation, yield prediction) because (i)~the features correspond to physically interpretable quantities (nitrogen, pH, rainfall) that farmers and agronomists understand, (ii)~TreeExplainer provides exact Shapley value computation for tree-based models in polynomial time~\cite{lundberg2020local2global}, and (iii)~SHAP can generate both local (per-prediction) and global (population-level) explanations.
+
+In practice, SHAP has been used to identify which soil/climate variables drive crop recommendations (e.g., high potassium favoring banana cultivation) and which factors contribute most to yield predictions (e.g., rainfall anomalies explaining below-average rice yields).
+
+\subsection{LIME (Local Interpretable Model-agnostic Explanations)}
+
+LIME~\cite{ribeiro2016should} generates local explanations by fitting a simple interpretable model (e.g., sparse linear regression) to a perturbed neighborhood around the instance being explained. LIME is model-agnostic and can be applied to any classifier or regressor, making it versatile across agricultural applications.
+
+In agricultural studies, LIME has been applied to explain crop recommendation outputs and disease classification predictions. However, LIME's reliance on random perturbation can lead to instability---different runs may produce different explanations for the same input---which limits its reliability for high-stakes agricultural decision support. SHAP, with its axiomatic guarantees (efficiency, symmetry, additivity, and dummy), is generally preferred when applicable.
+
+\subsection{Attention-Based Interpretability}
+
+Transformer architectures inherently produce attention weight matrices that indicate which input tokens (image patches or feature positions) the model attends to at each layer. These attention maps can serve as a form of built-in interpretability, providing insight into which parts of the input the model deems most relevant without requiring post-hoc analysis.
+
+In agricultural applications, attention-based interpretability has been explored for (i)~ViT-based disease classifiers, where attention maps can highlight diseased leaf regions, and (ii)~temporal attention in LSTM-based yield predictors, where attention weights indicate which time steps (growth stages, weather events) are most influential for the final yield prediction.
+
+\subsection{Comparative Assessment}
+
+Table~\ref{tab:xai_comparison} provides a comparative summary of XAI methods for agricultural applications.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{Comparative Assessment of XAI Methods for Agricultural ML}
+  \label{tab:xai_comparison}
+  \begin{tabular}{L{2cm} C{1.8cm} C{1.8cm} C{1.5cm} C{1.8cm} L{4.5cm}}
+    \toprule
+    \textbf{Method} & \textbf{Scope} & \textbf{Model Type} & \textbf{Stability} & \textbf{Computation} & \textbf{Best Agricultural Use Case} \\
+    \midrule
+    Grad-CAM & Local & CNN-specific & High & Fast & Spatial disease localization in leaf images \\
+    SHAP & Local + Global & Any (exact for trees) & High & Moderate & Feature attribution for tabular crop/yield models \\
+    LIME & Local & Model-agnostic & Low & Moderate & Quick inspection of any model type \\
+    Attention Maps & Local & Transformer & Moderate & Free & Built-in interpretability for ViT-based systems \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+
+% ══════════════════════════════════════════════════════════════════
+% VI. UNCERTAINTY QUANTIFICATION
+% ══════════════════════════════════════════════════════════════════
+\section{Uncertainty Quantification for Agricultural ML}
+\label{sec:uncertainty}
+
+Reliable uncertainty estimates are essential for responsible deployment of ML systems in agricultural decision support. A model that reports high confidence in an incorrect prediction can lead to misguided decisions---such as applying the wrong treatment for a misidentified disease or planting a crop ill-suited to the soil conditions---with potentially significant economic consequences. This section reviews the principal methods for uncertainty quantification in the context of agricultural ML.
+
+\subsection{Sources of Uncertainty}
+
+Uncertainty in ML predictions arises from two principal sources~\cite{abdar2021review}:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Aleatoric uncertainty} (data uncertainty): Irreducible uncertainty arising from inherent noise in the data, such as measurement errors in soil sensors, natural variability in disease symptom presentation, or weather forecast imprecision.
+  
+  \item \textbf{Epistemic uncertainty} (model uncertainty): Reducible uncertainty arising from limited training data or model misspecification. This type of uncertainty is higher for inputs that are dissimilar to the training distribution and can, in principle, be reduced by collecting more representative data.
+\end{itemize}
+
+Distinguishing between these sources is valuable in agricultural contexts: high aleatoric uncertainty suggests that the inherent variability of the system limits prediction precision, while high epistemic uncertainty indicates that the model lacks sufficient training data for the given conditions and that human expert judgment should be sought.
+
+\subsection{Monte Carlo Dropout}
+
+Gal and Ghahramani~\cite{gal2016dropout} demonstrated that applying dropout at inference time and performing $T$ stochastic forward passes provides an approximate Bayesian inference procedure. The predictive distribution is approximated by averaging over the $T$ forward passes:
+\begin{equation}
+  \bar{p}_k = \frac{1}{T} \sum_{t=1}^{T} p_k^{(t)}
+\end{equation}
+and the predictive entropy serves as an uncertainty measure:
+\begin{equation}
+  H[\bar{\mathbf{p}}] = -\sum_{k=1}^{C} \bar{p}_k \log_2(\bar{p}_k)
+\end{equation}
+
+MC~Dropout has been applied to plant disease classifiers to identify uncertain predictions that should be flagged for expert review. Its primary advantage is implementation simplicity---it requires no architectural modifications beyond retaining dropout layers at inference time. However, the quality of uncertainty estimates depends on the placement and rate of dropout layers, and models with minimal dropout (e.g., MobileNetV3 with dropout only in the classifier head) may produce underestimated uncertainty.
+
+\subsection{Deep Ensembles}
+
+Lakshminarayanan~et~al.~\cite{lakshminarayanan2017simple} proposed training $M$ independent instances of the same architecture with different random initializations and aggregating their predictions. The ensemble mean provides the point prediction, and the ensemble variance captures epistemic uncertainty:
+\begin{equation}
+  \sigma^2_{\text{epistemic}} = \frac{1}{M} \sum_{m=1}^{M} (f_m(\mathbf{x}) - \bar{f}(\mathbf{x}))^2
+\end{equation}
+
+Deep ensembles have been shown to provide better-calibrated uncertainty estimates than MC~Dropout in many settings, at the cost of $M$-fold increased computational resources for training and inference. In agricultural applications where model retraining is infrequent (e.g., once per season), the training cost may be acceptable, though the inference cost can be prohibitive for real-time edge deployment.
+
+\subsection{Post-hoc Calibration}
+
+Modern neural networks are frequently overconfident in their predictions---the maximum softmax probability systematically exceeds the empirical accuracy~\cite{guo2017calibration}. Post-hoc calibration methods address this by learning a mapping from raw model outputs to calibrated probabilities using a held-out validation set.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Platt scaling}~\cite{platt1999probabilistic}: Fits a sigmoid (logistic) function to the logits, learning a temperature parameter that rescales the prediction confidence.
+  
+  \item \textbf{Isotonic regression}~\cite{zadrozny2002transforming}: Fits a non-parametric, monotonically increasing function from predicted probabilities to empirical frequencies.
+  
+  \item \textbf{Temperature scaling}~\cite{guo2017calibration}: A single-parameter variant of Platt scaling that divides all logits by a learned temperature $T > 0$ before softmax, representing the simplest effective calibration method.
+\end{itemize}
+
+Calibration quality is measured using the Expected Calibration Error (ECE):
+\begin{equation}
+  \text{ECE} = \sum_{m=1}^{M} \frac{|B_m|}{n} \left| \text{acc}(B_m) - \text{conf}(B_m) \right|
+\end{equation}
+
+In crop recommendation systems, where the raw Random Forest class probabilities may not be well-calibrated, applying Platt scaling or isotonic regression can significantly reduce the ECE and produce more trustworthy confidence scores.
+
+\subsection{Conformal Prediction}
+
+Conformal prediction~\cite{vovk2005algorithmic,shafer2008tutorial,angelopoulos2023conformal} is a distribution-free framework for constructing prediction sets (classification) or prediction intervals (regression) with finite-sample coverage guarantees. Given a calibration set of size $n_{\text{cal}}$ and a target coverage level $1-\alpha$, split conformal prediction~\cite{papadopoulos2002inductive} proceeds as follows:
+
+\begin{enumerate}[leftmargin=*]
+  \item Compute conformity scores (e.g., absolute residuals for regression: $R_i = |y_i - \hat{y}_i|$) on the calibration set.
+  \item Compute the $(1-\alpha)$-quantile $\hat{q}$ of the conformity scores.
+  \item For a new input $\mathbf{x}^*$, construct the prediction interval $[\hat{y}^* - \hat{q}, \; \hat{y}^* + \hat{q}]$.
+\end{enumerate}
+
+The key theoretical property is that the constructed intervals satisfy $\Pr(y^* \in C(\mathbf{x}^*)) \geq 1 - \alpha$ under the exchangeability assumption---without any distributional assumptions about the data or any requirements on the underlying model. This property makes conformal prediction particularly attractive for agricultural applications where the data distributions may be complex, non-Gaussian, and poorly characterized.
+
+Recent work has extended conformal prediction to classification (constructing prediction sets that contain the true class with high probability), adaptive intervals (adjusting interval width based on local difficulty), and online settings where the calibration set is updated incrementally. In agricultural yield prediction, conformal intervals provide actionable uncertainty bounds that communicate to farmers and planners the range within which the actual yield is statistically likely to fall.
+
+\subsection{Comparative Summary}
+
+Table~\ref{tab:uq_comparison} compares the uncertainty quantification methods discussed in this section.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{Comparison of Uncertainty Quantification Methods for Agricultural ML}
+  \label{tab:uq_comparison}
+  \begin{tabular}{L{2.5cm} C{2cm} C{2cm} C{2.5cm} L{4.5cm}}
+    \toprule
+    \textbf{Method} & \textbf{Coverage Guarantee} & \textbf{Compute Cost} & \textbf{Implementation Complexity} & \textbf{Best Agricultural Application} \\
+    \midrule
+    MC Dropout & No formal guarantee & $T \times$ inference & Low (reuse dropout) & Disease classifier uncertainty screening \\
+    Deep Ensembles & No formal guarantee & $M \times$ training + inference & High (train $M$ models) & High-stakes yield forecasting \\
+    Post-hoc Calibration & No coverage guarantee & Negligible & Low (fit on validation set) & Crop recommendation confidence calibration \\
+    Conformal Prediction & Finite-sample guarantee & Negligible & Low (quantile computation) & Yield prediction intervals with formal bounds \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+
+% ══════════════════════════════════════════════════════════════════
+% VII. INTEGRATED MULTI-MODULE AGRICULTURAL PLATFORMS
+% ══════════════════════════════════════════════════════════════════
+\section{Integrated Multi-Module Agricultural Platforms}
+\label{sec:integrated}
+
+A growing trend in recent research (2023--2025) is the development of integrated platforms that unify multiple agricultural ML tasks---disease detection, crop recommendation, and yield prediction---within a single decision support system. These platforms aim to address the practical limitation that farmers must otherwise interact with multiple disconnected tools, each with different interfaces, data requirements, and output formats.
+
+\subsection{Architectural Patterns}
+
+Integrated agricultural platforms typically follow one of three architectural patterns:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Monolithic applications:} All modules are tightly coupled within a single codebase, sharing data structures and runtime. While simple to develop, this approach limits independent scaling and updating of individual modules.
+  
+  \item \textbf{Microservice/API-based architectures:} Each ML module is deployed as an independent service behind a unified API gateway. This pattern enables independent scaling, technology-heterogeneous deployment (e.g., PyTorch for image models, scikit-learn for tabular models), and modular updates. REST APIs with JSON payloads and OpenAPI documentation are the most common interface pattern.
+  
+  \item \textbf{Edge-cloud hybrid architectures:} Lightweight models (e.g., quantized MobileNet for disease detection) run on edge devices (smartphones, embedded systems) for real-time inference, while computationally intensive models (e.g., yield forecasting with satellite data) are served from cloud infrastructure. This pattern is particularly relevant for agricultural users in areas with limited connectivity.
+\end{enumerate}
+
+\subsection{Emerging Features}
+
+Recent integrated platforms incorporate several emerging features beyond the core prediction modules:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Conversational interfaces:} Integration of large language models (LLMs) to provide natural-language agronomic advice, treatment recommendations, and multi-lingual support, making the technology accessible to users with varying levels of digital literacy.
+  
+  \item \textbf{IoT integration:} Real-time ingestion of data from soil moisture sensors, weather stations, and drone-mounted cameras to provide continuous monitoring rather than one-time predictions.
+  
+  \item \textbf{Market intelligence:} Incorporation of crop price data and market trend analysis to augment agronomic recommendations with economic considerations.
+  
+  \item \textbf{Explainability dashboards:} Interactive visualization of SHAP values, Grad-CAM overlays, and confidence intervals within the user interface, transforming raw XAI outputs into actionable insights for non-technical users.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════
+% VIII. DATASETS AND BENCHMARKS
+% ══════════════════════════════════════════════════════════════════
+\section{Datasets and Benchmarks}
+\label{sec:datasets}
+
+The availability and quality of datasets critically influence the development and evaluation of agricultural ML systems. Table~\ref{tab:datasets_summary} summarizes the principal publicly available datasets used across the three core agricultural ML tasks surveyed in this paper.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{Summary of Publicly Available Datasets for Agricultural ML}
+  \label{tab:datasets_summary}
+  \begin{tabular}{L{3cm} L{1.6cm} C{1.6cm} C{1.4cm} L{2.5cm} L{3.5cm}}
+    \toprule
+    \textbf{Dataset} & \textbf{Task} & \textbf{Samples} & \textbf{Classes} & \textbf{Data Type} & \textbf{Limitations} \\
+    \midrule
+    PlantVillage~\cite{hughes2015open} & Disease & $\sim$54K images & 38 & RGB leaf images & Lab conditions; uniform backgrounds \\
+    PlantDoc~\cite{singh2018plantdoc} & Disease & $\sim$2.6K images & 27 & Web-sourced images & Small size; noisy labels \\
+    Kaggle Crop Rec. & Rec. & 2,200 rows & 22 & Tabular (7 features) & Small; perfectly balanced; synthetic-like \\
+    India Crop Prod. & Yield & $\sim$247K rows & Continuous & Tabular & Limited features; no weather data \\
+    USDA NASS & Yield & Varies & Continuous & Tabular & US-only; county-level aggregation \\
+    ERA5 / WorldClim & Weather & Global & N/A & Gridded reanalysis & Spatial resolution limits field-level use \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+A critical observation across all three domains is the paucity of large-scale, field-validated datasets that capture the diversity of real-world agricultural conditions. The PlantVillage dataset, while instrumental in catalyzing research, is now widely acknowledged to be insufficient for evaluating field-deployable disease detection systems~\cite{barbedo2018factors}. Similarly, the Kaggle Crop Recommendation dataset, with only 2,200 samples, is inadequate for training models intended for real-world deployment. The development of comprehensive, multi-regional, multi-season agricultural datasets---collected under realistic field conditions and annotated by domain experts---is an urgent priority for the field.
+
+
+% ══════════════════════════════════════════════════════════════════
+% IX. OPEN CHALLENGES
+% ══════════════════════════════════════════════════════════════════
+\section{Open Challenges}
+\label{sec:challenges}
+
+Despite significant progress, several critical challenges impede the translation of agricultural ML research into practical, field-deployable decision support systems.
+
+\subsection{Laboratory-to-Field Generalization}
+
+The generalization gap between laboratory benchmark performance and real-world field accuracy remains the most significant barrier to deployment. Models achieving $>$99\% accuracy on PlantVillage can experience accuracy drops of 20--35\% on field-captured images~\cite{barbedo2018factors,singh2018plantdoc}. Addressing this gap requires multi-source training datasets, domain adaptation techniques, and evaluation protocols that explicitly measure out-of-distribution performance.
+
+\subsection{Dataset Scarcity and Quality}
+
+High-quality, expert-annotated agricultural datasets remain scarce, particularly for less-studied crops, rare diseases, and non-Western agricultural regions. The community's heavy reliance on a small number of benchmark datasets (PlantVillage, Kaggle Crop Recommendation) limits the diversity and representativeness of research findings. Active learning and citizen science approaches for scalable data collection represent promising directions.
+
+\subsection{Scalability Across Crops and Regions}
+
+Most studies focus on a limited set of crops (tomato, corn, potato) and geographic regions (US, India, China). Models trained on data from one region may not generalize to other agro-climatic zones with different soil types, weather patterns, crop varieties, and management practices. Few-shot learning and meta-learning approaches may help address this cross-domain transfer challenge.
+
+\subsection{Insufficient Uncertainty Quantification}
+
+Despite the availability of well-developed uncertainty quantification methods (MC~Dropout, conformal prediction), the majority of published agricultural ML studies report only point predictions without uncertainty estimates. When uncertainty is reported, it is often limited to raw softmax confidence, which is known to be poorly calibrated~\cite{guo2017calibration}. Systematic integration of formal uncertainty quantification into agricultural ML workflows remains an open challenge.
+
+\subsection{Limited User-Centric Evaluation}
+
+The utility of XAI outputs and uncertainty estimates for actual agricultural decision-making has rarely been evaluated through user studies with farmers, agronomists, or agricultural extension workers. Most studies evaluate explainability qualitatively (``the heatmap highlights the lesion'') rather than measuring whether explanations improve decision quality, user trust, or task performance. Rigorous human-computer interaction studies are needed to bridge this gap.
+
+\subsection{Computational Constraints in Rural Deployment}
+
+Many state-of-the-art models require computational resources (GPU-equipped servers, high-bandwidth connectivity) that are unavailable in the rural areas where they are most needed. Model compression techniques (quantization, pruning, knowledge distillation) and edge-optimized architectures are essential for practical deployment, yet receive relatively limited attention in the agricultural ML literature compared to accuracy optimization.
+
+\subsection{Lack of Standardized Evaluation Protocols}
+
+There is no consensus on standardized evaluation protocols, train/test split strategies, or benchmark suites for agricultural ML tasks. Different studies use different data splits, preprocessing pipelines, and evaluation metrics, making direct comparison of results difficult. The development of community benchmarks with standardized protocols would significantly advance the field.
+
+
+% ══════════════════════════════════════════════════════════════════
+% X. FUTURE RESEARCH DIRECTIONS
+% ══════════════════════════════════════════════════════════════════
+\section{Future Research Directions}
+\label{sec:future}
+
+Based on the gaps identified in this survey, we propose the following priority research directions:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Field-validated datasets and benchmarks.} The community should prioritize the creation and public release of large-scale, field-collected agricultural datasets spanning diverse crops, geographic regions, and environmental conditions. These datasets should include multi-annotator expert labels, metadata about imaging conditions, and temporal information to support longitudinal studies.
+  
+  \item \textbf{Domain adaptation for cross-environment transfer.} Domain adaptation and domain generalization techniques---including adversarial training, style transfer, and domain-invariant representation learning---should be systematically evaluated for bridging the laboratory-to-field gap in disease detection and the cross-regional gap in yield prediction.
+  
+  \item \textbf{Multimodal data fusion.} Agricultural decisions inherently depend on multiple data modalities: visual (leaf images, satellite imagery), tabular (soil tests, weather records), temporal (growth stage sequences), and textual (agronomic knowledge). Research should investigate architectures and training strategies that effectively fuse these heterogeneous data sources.
+  
+  \item \textbf{Mandatory uncertainty quantification.} We advocate for a community standard requiring all agricultural ML publications to report calibrated uncertainty estimates alongside point predictions. Conformal prediction, with its distribution-free coverage guarantees, is particularly suitable for agricultural applications and should be adopted more broadly.
+  
+  \item \textbf{User-centric design and evaluation.} Future systems should be co-designed with agricultural end users through participatory design processes, and their utility should be evaluated through controlled user studies measuring decision quality, trust calibration, and task completion time.
+  
+  \item \textbf{Foundation models for agriculture.} The success of foundation models in natural language processing and computer vision suggests the potential for pre-trained agricultural foundation models that encode broad agronomic knowledge and can be fine-tuned for specific tasks with minimal labeled data.
+  
+  \item \textbf{Responsible and equitable AI.} Research should address the risk of agricultural AI systems exacerbating existing inequalities by ensuring that training data, model performance, and system accessibility are equitable across regions, crop types, and farmer demographics.
+\end{enumerate}
+
+
+% ══════════════════════════════════════════════════════════════════
+% XI. CONCLUSION
+% ══════════════════════════════════════════════════════════════════
+\section{Conclusion}
+\label{sec:conclusion}
+
+This survey has provided a comprehensive review of machine learning approaches for agricultural decision support, spanning five interconnected research areas: crop disease detection, crop recommendation, yield prediction, explainable AI, and uncertainty quantification. The review reveals a field that has achieved remarkable benchmark performance---with disease classifiers exceeding 99\% accuracy, crop recommenders achieving near-perfect classification, and yield predictors explaining over 90\% of variance---yet faces substantial challenges in translating these achievements into reliable, field-deployable systems.
+
+The three persistent gaps identified throughout this survey---generalization, interpretability, and reliability---are not independent but deeply interrelated. A disease classifier that generalizes poorly to field conditions will produce uncertain predictions that, without proper uncertainty quantification, will mislead users; and without explainability, users have no means to assess whether a prediction should be trusted. Addressing these gaps requires an integrated, system-level approach that treats explainability and uncertainty quantification not as optional enhancements but as core architectural requirements.
+
+The emerging trend toward integrated multi-module platforms that combine disease detection, crop recommendation, and yield prediction within unified decision support systems represents a promising direction. These platforms have the potential to provide farmers with holistic, interpretable, and uncertainty-aware guidance across the full agricultural decision cycle---from crop selection through disease management to harvest forecasting.
+
+Realizing this potential will require sustained effort across multiple fronts: the creation of representative, field-validated datasets; the development of models that are not only accurate but also robust, interpretable, and calibrated; the design of user interfaces that effectively communicate both predictions and their associated uncertainties; and rigorous evaluation with actual agricultural end users. We hope that this survey provides a useful consolidated reference for researchers and practitioners advancing these goals at the intersection of artificial intelligence and sustainable agriculture.
+
+
+% ══════════════════════════════════════════════════════════════════
+% REFERENCES
+% ══════════════════════════════════════════════════════════════════
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{survey_references}
+
+\end{document}

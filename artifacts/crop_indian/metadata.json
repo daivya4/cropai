@@ -1,0 +1,38 @@
+{
+  "model_name": "indian_crop_suitability_ranker",
+  "model_version": "crop_indian_recommender_v2",
+  "dataset": "Indian district-year crop occurrence dataset",
+  "target": "historical crop suitability ranking",
+  "training_rows": 20514,
+  "test_rows": 3603,
+  "test_districts": 310,
+  "metrics": {
+    "group_hit_at_1": 0.9967741935483871,
+    "group_hit_at_3": 1.0,
+    "group_hit_at_5": 1.0,
+    "group_recall_at_1": 0.09807825634201343,
+    "group_recall_at_3": 0.2852025109615236,
+    "group_recall_at_5": 0.4536504508563338
+  },
+  "classes": [
+    "Barley",
+    "Castor",
+    "Chickpea",
+    "Cotton",
+    "Finger Millet",
+    "Groundnut",
+    "Linseed",
+    "Maize",
+    "Pearl Millet",
+    "Pigeonpea",
+    "Rapeseed And Mustard",
+    "Rice",
+    "Safflower",
+    "Sesamum",
+    "Soyabean",
+    "Sugarcane",
+    "Sunflower",
+    "Wheat"
+  ],
+  "scoring": "70% district history, 25% state history, 5% national history"
+}

@@ -1,0 +1,670 @@
+% CropAI Research Paper — IEEE Conference Format
+% Compiles cleanly in Overleaf with pdfLaTeX
+\documentclass[conference]{IEEEtran}
+
+% ── Packages ──────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{balance}
+\usepackage{tabularx}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  breaklinks=true
+}
+
+% ── Title ─────────────────────────────────────────────────────────
+% Removing manual \\ so LaTeX's TeX engine balances title lines naturally across page width
+\title{CropAI: An Explainable, Uncertainty-Aware Agricultural Decision Support System with Integrated Disease Diagnosis, Crop Recommendation, and Yield Prediction}
+
+% ── Authors ────────────────────────────────────────────────────────
+% Standard IEEE format for 4+ authors sharing an institution:
+% Grouping authors eliminates horizontal tabular column overflow and
+% preserves vital first-page vertical space for the Introduction.
+\author{
+\IEEEauthorblockN{Monisha H M}
+\IEEEauthorblockA{B.M.S. College of Engineering\\Bengaluru, India\\monishahm.ise@bmsce.ac.in}
+\and
+\IEEEauthorblockN{Bramha Anilkumar Bajannavar}
+\IEEEauthorblockA{B.M.S. College of Engineering\\Bengaluru, India\\bramhaanilkumar.cs23@bmsce.ac.in}
+\and
+\IEEEauthorblockN{Daivya Priyankkumar Shah}
+\IEEEauthorblockA{B.M.S. College of Engineering\\Bengaluru, India\\daivya.cs23@bmsce.ac.in}
+\and
+\IEEEauthorblockN{Bhavya J Makadia}
+\IEEEauthorblockA{B.M.S. College of Engineering\\Bengaluru, India\\bhavyaj.cs23@bmsce.ac.in}
+\and
+\IEEEauthorblockN{Hitesh Sharma}
+\IEEEauthorblockA{B.M.S. College of Engineering\\Bengaluru, India\\hiteshsharma.cs23@bmsce.ac.in}
+}
+
+\begin{document}
+
+\maketitle
+
+% ══════════════════════════════════════════════════════════════════
+% ABSTRACT
+% ══════════════════════════════════════════════════════════════════
+\begin{abstract}
+Agricultural decision-making remains dependent on expert judgment, manual crop inspection, and fragmented information sources. This paper presents CropAI, a multi-module agricultural decision support system that integrates three independent machine learning pipelines: (1)~leaf disease classification using a fine-tuned MobileNetV3-Small convolutional neural network on the PlantVillage dataset with 38~classes, (2)~crop recommendation using a calibrated Random Forest classifier on soil and environmental parameters with 22~crop classes, and (3)~crop yield prediction using a Random Forest regressor with log-transformed targets on Indian agricultural production data. Each module is augmented with explainability mechanisms---Gradient-weighted Class Activation Mapping (Grad-CAM) for image-based diagnosis and SHapley Additive exPlanations (SHAP) for tabular models---and uncertainty quantification through Monte Carlo (MC) Dropout, Platt scaling calibration, and split conformal prediction intervals. The system is deployed as a decoupled service architecture with a FastAPI backend and Streamlit frontend, containerized via Docker. Experimental evaluation on held-out test sets yields a disease classification accuracy of 99.17\% (macro F1: 0.985), a crop recommendation accuracy of 100\% on the test partition, and a yield prediction $R^2$ of 0.947 with 94.8\% empirical coverage at the 90\% nominal conformal level. The paper discusses the practical limitations of each module, including dataset representativeness concerns and the gap between benchmark performance and real-world deployment conditions.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Agricultural Decision Support, Explainable AI, Uncertainty Quantification, Crop Disease Detection, Crop Recommendation, Yield Prediction, Grad-CAM, SHAP, Conformal Prediction, Transfer Learning
+\end{IEEEkeywords}
+
+% ══════════════════════════════════════════════════════════════════
+% I. INTRODUCTION
+% ══════════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:introduction}
+
+Agriculture remains a primary livelihood for a substantial fraction of the global population, yet agricultural productivity is threatened by crop diseases, suboptimal crop selection, and unpredictable yield variability~\cite{fao2021state}. Early and accurate identification of plant diseases can prevent significant economic losses, estimated at 10--16\% of global crop production annually~\cite{savary2019global}. Simultaneously, selecting appropriate crops based on soil chemistry and climate conditions is critical for maximizing productivity, particularly for smallholder farmers who lack access to professional agronomic services~\cite{lipper2014climate}.
+
+Machine learning (ML) approaches have demonstrated significant potential in addressing these agricultural challenges. Deep convolutional neural networks (CNNs) have achieved high accuracy on benchmark plant disease datasets such as PlantVillage~\cite{mohanty2016using,hughes2015open}. Tree-based ensemble methods have been applied to crop recommendation from soil parameters~\cite{pudumalar2017crop}, and regression models have been used for yield forecasting~\cite{khaki2020comprehensive}. However, the practical adoption of these systems in agricultural settings faces several persistent challenges.
+
+First, most existing systems operate as black-box predictors, providing point predictions without transparency regarding the reasoning behind their outputs. In agricultural contexts where incorrect decisions carry real economic consequences, end users---particularly farmers and agronomists---require explanations to assess whether a model's prediction aligns with their domain knowledge~\cite{arrieta2020explainable}. Second, standard classification and regression models produce confidence scores that are frequently miscalibrated, leading to overconfident predictions that can mislead users~\cite{guo2017calibration}. Reliable uncertainty estimates are essential for users to assess prediction trustworthiness and decide when to seek additional expert opinion. Third, existing agricultural ML tools are typically single-purpose, requiring users to interact with multiple disconnected systems for different tasks.
+
+This paper presents CropAI, an integrated agricultural decision support system that addresses these gaps by combining three independent ML modules with systematic explainability and uncertainty quantification:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Crop Disease Diagnosis:} A fine-tuned MobileNetV3-Small model classifying leaf images into 38~disease/healthy categories, with Grad-CAM visual explanations and MC~Dropout uncertainty estimation.
+  \item \textbf{Crop Recommendation:} A calibrated Random Forest classifier recommending crops from seven soil and environmental input features across 22~classes, with SHAP-based feature attribution.
+  \item \textbf{Yield Prediction:} A Random Forest regressor with log-transformed targets predicting crop yield in tonnes per hectare, with split conformal prediction intervals and SHAP explanations.
+\end{enumerate}
+
+The system is deployed as a decoupled architecture with a FastAPI REST backend serving all three modules and a Streamlit web frontend, containerized using Docker for reproducible deployment.
+
+The primary contributions of this work are:
+\begin{itemize}[leftmargin=*]
+  \item An integrated, multi-module agricultural decision support system covering disease diagnosis, crop recommendation, and yield prediction within a unified platform.
+  \item Systematic incorporation of model-appropriate explainability (Grad-CAM for images, SHAP TreeExplainer for tabular models) across all prediction endpoints.
+  \item Uncertainty quantification tailored to each task: MC~Dropout entropy for classification, Platt-scaling calibration for crop recommendation, and split conformal prediction for regression intervals.
+  \item A production-oriented service architecture with API-first design, Pydantic-validated request/response schemas, and Docker-based deployment.
+  \item Comprehensive experimental evaluation on public benchmark datasets with documented metrics, calibration analysis, and honest discussion of limitations.
+\end{itemize}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related_work} surveys related work across crop disease detection, crop recommendation, yield prediction, explainable AI, and uncertainty estimation. Section~\ref{sec:methodology} details the methodology for each module. Section~\ref{sec:architecture} describes the system architecture. Section~\ref{sec:datasets} characterizes the datasets used. Section~\ref{sec:experiments} presents the experimental setup. Section~\ref{sec:results} reports the results. Section~\ref{sec:discussion} provides a critical discussion. Section~\ref{sec:limitations} enumerates known limitations. Section~\ref{sec:conclusion} concludes the paper with directions for future work.
+
+
+% ══════════════════════════════════════════════════════════════════
+% II. RELATED WORK
+% ══════════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related_work}
+
+This section surveys the five research areas most relevant to CropAI: deep learning for crop disease detection, ML-based crop recommendation, yield prediction, explainable AI, and uncertainty quantification. For a comprehensive treatment of these topics, including detailed architectural comparisons, dataset analyses, and identification of open research challenges, we refer the reader to our companion survey paper~\cite{cropai_survey2026}.
+
+\subsection{Crop Disease Detection Using Deep Learning}
+
+Deep learning approaches for plant disease identification from leaf images have been extensively studied over the past decade. Mohanty et al.~\cite{mohanty2016using} demonstrated that CNN architectures including AlexNet and GoogLeNet trained on the PlantVillage dataset~\cite{hughes2015open} could achieve accuracies exceeding 99\% under controlled laboratory conditions. Subsequent work has employed a range of architectures for this task, including ResNet~\cite{he2016deep}, VGGNet~\cite{simonyan2015very}, InceptionV3~\cite{szegedy2016rethinking}, and EfficientNet~\cite{tan2019efficientnet}. Ferentinos~\cite{ferentinos2018deep} conducted a systematic evaluation of five CNN architectures on PlantVillage, reporting accuracies from 97.8\% to 99.5\%, establishing that transfer learning from ImageNet~\cite{deng2009imagenet} is consistently effective for this domain.
+
+Transfer learning has become the dominant paradigm for plant disease classification, where models pre-trained on ImageNet are fine-tuned on domain-specific datasets~\cite{too2019comparative}. Howard et al.~\cite{howard2019searching} introduced MobileNetV3, a lightweight architecture designed for mobile and edge deployment using neural architecture search, squeeze-and-excitation modules, and hard-swish activations, which provides a favorable accuracy-to-latency trade-off for resource-constrained agricultural applications. More recently, Vision Transformers (ViTs)~\cite{dosovitskiy2021image} and hybrid CNN-ViT architectures have been explored for disease classification, with studies from 2023--2025 reporting that attention-based models can capture global dependencies in leaf images that pure CNNs may miss. Object detection approaches based on the YOLO family~\cite{jocher2023yolov8} have also gained traction for in-field disease detection, enabling localization of multiple disease instances within complex field images.
+
+Despite high benchmark accuracies, a well-documented limitation is the significant performance drop observed when models trained on PlantVillage are evaluated on images from uncontrolled field conditions~\cite{barbedo2018factors}. Singh et al.~\cite{singh2018plantdoc} introduced PlantDoc, a web-sourced dataset, and demonstrated accuracy drops of 20--35\% for PlantVillage-trained models, underscoring the urgency of addressing the laboratory-to-field generalization gap.
+
+\subsection{Crop Recommendation Systems}
+
+Crop recommendation based on soil and environmental parameters has been addressed through various ML approaches. Pudumalar et al.~\cite{pudumalar2017crop} applied Random Forest, Naive Bayes, and Support Vector Machine classifiers to recommend crops based on soil characteristics, with Random Forest consistently achieving the highest accuracy. Kalimuthu et al.~\cite{kalimuthu2020crop} used ensemble methods on the Kaggle Crop Recommendation dataset---the same dataset used in this work---achieving near-perfect accuracy on test partitions. Gradient boosting methods, including XGBoost~\cite{chen2016xgboost} and LightGBM~\cite{ke2017lightgbm}, have emerged as competitive alternatives, particularly for datasets with complex feature interactions.
+
+The consistently high classification accuracy reported in the literature for the Kaggle dataset (routinely 97--100\%) raises questions about the separability of the feature space and the generalizability of such results to real-world soil conditions, a point we discuss further in Section~\ref{sec:limitations}. Recent work (2023--2025) has begun to address these limitations through multimodal approaches that combine structured tabular data with soil image classification, the integration of satellite-derived vegetation indices, and context-aware systems that incorporate crop rotation constraints and economic factors.
+
+\subsection{Yield Prediction}
+
+Crop yield prediction is a regression task with practical applications in food security planning and agricultural policy. Khaki and Wang~\cite{khaki2020comprehensive} provided a comprehensive comparison of deep learning architectures for US crop yield prediction. Among traditional ML methods, tree-based ensemble methods such as Random Forests~\cite{jeong2016random} and gradient boosting~\cite{chen2016xgboost} have been widely applied to tabular agricultural datasets with mixed feature types. Van Klompenburg et al.~\cite{vanklompenburg2020crop} conducted a systematic literature review identifying Random Forest and neural networks as the most frequently used and best-performing approaches.
+
+More recent studies have explored hybrid deep learning architectures combining CNNs for spatial feature extraction (e.g., from satellite imagery) with LSTMs for temporal sequence modeling of weather patterns, often enhanced with attention mechanisms. The incorporation of remote sensing features (NDVI, EVI, LAI) from satellite platforms has emerged as a key trend, enabling models to capture crop health signals that complement traditional weather and soil inputs~\cite{weiss2020remote}.
+
+For uncertainty in regression predictions, conformal prediction~\cite{vovk2005algorithmic,shafer2008tutorial} has been proposed as a distribution-free approach for constructing valid prediction intervals with finite-sample coverage guarantees under exchangeability assumptions. Angelopoulos and Bates~\cite{angelopoulos2023conformal} provided a recent tutorial establishing conformal prediction as a practical, model-agnostic framework particularly well-suited to agricultural applications.
+
+\subsection{Explainable AI in Agriculture}
+
+Explainability is increasingly recognized as a requirement for ML systems deployed in high-stakes domains including agriculture~\cite{arrieta2020explainable}. For image classification, Gradient-weighted Class Activation Mapping (Grad-CAM)~\cite{selvaraju2017grad} has been widely adopted to produce spatial heatmaps indicating which image regions contributed to a classification decision. For tabular models, SHAP (SHapley Additive exPlanations)~\cite{lundberg2017unified} provides theoretically grounded feature attribution based on cooperative game theory, with TreeExplainer~\cite{lundberg2020local2global} enabling exact Shapley value computation for tree-based models. LIME~\cite{ribeiro2016should} offers a model-agnostic alternative by fitting local interpretable models to perturbed neighborhoods around individual predictions.
+
+Recent surveys~\cite{linardatos2021explainable,samek2021explaining} have emphasized the need for comparative evaluation of XAI methods based on fidelity, stability, and computational efficiency rather than qualitative assessment alone. Saleem et al.~\cite{saleem2019plant} highlighted the need for interpretable plant disease detection systems that can complement, rather than replace, expert judgment. The growing emphasis on regulatory compliance (e.g., the EU AI Act) has further motivated the integration of explainability as a core system requirement rather than an optional enhancement.
+
+\subsection{Uncertainty Quantification}
+
+Reliable uncertainty estimates are essential for responsible deployment of ML systems in agricultural decision support~\cite{abdar2021review}. Gal and Ghahramani~\cite{gal2016dropout} demonstrated that dropout applied at inference time (MC~Dropout) provides an approximate Bayesian inference procedure yielding uncertainty estimates for neural networks. Lakshminarayanan et al.~\cite{lakshminarayanan2017simple} showed that deep ensembles---training multiple model instances with different random seeds---provide better-calibrated uncertainty estimates than MC~Dropout in many settings, though at increased computational cost.
+
+Platt scaling~\cite{platt1999probabilistic}, temperature scaling~\cite{guo2017calibration}, and isotonic regression~\cite{zadrozny2002transforming} are post-hoc calibration methods that adjust predicted probabilities to better reflect true class frequencies. Guo et al.~\cite{guo2017calibration} demonstrated that modern deep networks are frequently overconfident, motivating systematic calibration as a standard practice. For regression, conformal prediction~\cite{vovk2005algorithmic} constructs prediction intervals with distribution-free finite-sample coverage guarantees, provided the calibration and test data are exchangeable. The recent tutorial by Angelopoulos and Bates~\cite{angelopoulos2023conformal} has made conformal prediction accessible to a broader audience, accelerating its adoption in applied domains including agriculture.
+
+
+% ══════════════════════════════════════════════════════════════════
+% III. METHODOLOGY
+% ══════════════════════════════════════════════════════════════════
+\section{Methodology}
+\label{sec:methodology}
+
+This section describes the ML methodology for each of the three CropAI modules: disease diagnosis (Section~\ref{subsec:disease_method}), crop recommendation (Section~\ref{subsec:crop_method}), and yield prediction (Section~\ref{subsec:yield_method}).
+
+% ── III-A Disease ─────────────────────────────────────────────────
+\subsection{Disease Diagnosis Module}
+\label{subsec:disease_method}
+
+\subsubsection{Model Architecture}
+The disease classification model uses MobileNetV3-Small~\cite{howard2019searching} pre-trained on ImageNet~\cite{deng2009imagenet} as the backbone feature extractor. The final classification head is replaced with a fully connected layer mapping to $C = 38$ output classes. Specifically, the last linear layer of the MobileNetV3-Small classifier block (originally mapping to 1000 ImageNet classes) is replaced by:
+\begin{equation}
+  \hat{\mathbf{y}} = \mathbf{W} \cdot \mathbf{h} + \mathbf{b}, \quad \mathbf{W} \in \mathbb{R}^{38 \times d}, \quad \mathbf{h} \in \mathbb{R}^{d}
+\end{equation}
+where $\mathbf{h}$ is the penultimate feature vector of dimension $d = 1024$ and $\hat{\mathbf{y}} \in \mathbb{R}^{38}$ are the output logits.
+
+\subsubsection{Training Procedure}
+Training is performed end-to-end (all layers unfrozen) for 5~epochs with a batch size of 64. The loss function is cross-entropy with label smoothing of $\epsilon = 0.1$:
+\begin{equation}
+  \mathcal{L}_{\text{CE-LS}} = -(1 - \epsilon) \log p_{y} - \frac{\epsilon}{C} \sum_{k=1}^{C} \log p_{k}
+\end{equation}
+where $p_{y}$ is the predicted probability for the correct class and $p_{k}$ is the predicted probability for class $k$. The optimizer is AdamW~\cite{loshchilov2019decoupled} with a learning rate of $3 \times 10^{-4}$ and weight decay of $10^{-4}$. A cosine annealing schedule reduces the learning rate over the training period.
+
+Data augmentation during training includes RandomResizedCrop (scale 0.7--1.0), random horizontal flipping, and ColorJitter (brightness, contrast, saturation: 0.3; hue: 0.1). Validation and test inputs are resized to 256 pixels on the shorter side and center-cropped to $224 \times 224$. All images are normalized using ImageNet channel statistics ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$).
+
+\subsubsection{Explainability via Grad-CAM}
+Grad-CAM~\cite{selvaraju2017grad} is used to generate spatial attention heatmaps indicating which image regions influenced the predicted class. For the target class $c$, the Grad-CAM heatmap is computed as:
+\begin{equation}
+  L_{\text{Grad-CAM}}^{c} = \text{ReLU}\!\left(\sum_{k} \alpha_{k}^{c} \cdot A^{k}\right)
+\end{equation}
+where $A^{k}$ is the $k$-th activation map from the target convolutional layer and the importance weights $\alpha_{k}^{c}$ are obtained by global average pooling the gradients:
+\begin{equation}
+  \alpha_{k}^{c} = \frac{1}{Z} \sum_{i} \sum_{j} \frac{\partial y^{c}}{\partial A_{ij}^{k}}
+\end{equation}
+The target layer is the last convolutional block of the MobileNetV3-Small feature extractor. The resulting heatmap is upsampled to the original image resolution and overlaid as a color-mapped visualization.
+
+\subsubsection{Uncertainty via MC Dropout}
+Uncertainty estimation uses MC~Dropout~\cite{gal2016dropout}. At inference time, dropout layers in the classifier head are kept active, and $T = 10$ stochastic forward passes are performed. The averaged predictive distribution is:
+\begin{equation}
+  \bar{p}_{k} = \frac{1}{T} \sum_{t=1}^{T} p_{k}^{(t)}
+\end{equation}
+Predictive entropy is computed as:
+\begin{equation}
+  H[\bar{\mathbf{p}}] = -\sum_{k=1}^{C} \bar{p}_{k} \log_{2}(\bar{p}_{k})
+\end{equation}
+This entropy is normalized by the maximum possible entropy $\log_{2}(C)$ to obtain a reliability score in $[0, 1]$, with lower values indicating higher reliability.
+
+% ── III-B Crop ────────────────────────────────────────────────────
+\subsection{Crop Recommendation Module}
+\label{subsec:crop_method}
+
+\subsubsection{Model Architecture}
+The crop recommendation module employs a Random Forest classifier~\cite{breiman2001random} with 500~estimators and balanced class weights, followed by Platt scaling (sigmoid) calibration~\cite{platt1999probabilistic}.
+
+The seven input features are: nitrogen (N), phosphorus (P), potassium (K), temperature, humidity, soil pH, and rainfall. All features are standardized using zero-mean unit-variance scaling ($z = (x - \mu) / \sigma$), with the scaler fitted exclusively on the training partition to prevent data leakage.
+
+\subsubsection{Calibration}
+A \texttt{CalibratedClassifierCV} with sigmoid calibration is fitted on the held-out validation partition. The base Random Forest estimator is frozen (not retrained), and only the calibration mapping is learned from the validation set. This procedure adjusts the predicted class probabilities to better reflect the empirical class frequencies, reducing the Expected Calibration Error (ECE).
+
+The ECE is computed as:
+\begin{equation}
+  \text{ECE} = \sum_{m=1}^{M} \frac{|B_{m}|}{n} \left| \text{acc}(B_{m}) - \text{conf}(B_{m}) \right|
+\end{equation}
+where $B_{m}$ is the set of samples whose predicted confidence falls into the $m$-th bin, $\text{acc}(B_{m})$ is the accuracy within that bin, and $\text{conf}(B_{m})$ is the average confidence.
+
+\subsubsection{Explainability via SHAP}
+SHAP TreeExplainer~\cite{lundberg2017unified,lundberg2020local2global} is used to compute exact Shapley values for the base Random Forest estimator. For a given input $\mathbf{x}$ and predicted class $c$, the SHAP values $\phi_{j}^{c}(\mathbf{x})$ satisfy the local accuracy property:
+\begin{equation}
+  f_{c}(\mathbf{x}) = \phi_{0}^{c} + \sum_{j=1}^{d} \phi_{j}^{c}(\mathbf{x})
+\end{equation}
+where $\phi_{0}^{c}$ is the expected model output for class~$c$ and $d = 7$ is the number of input features. Features are ranked by $|\phi_{j}^{c}|$ and presented to the user as a sorted bar chart of positive (supporting the prediction) and negative (opposing) contributions.
+
+% ── III-C Yield ───────────────────────────────────────────────────
+\subsection{Yield Prediction Module}
+\label{subsec:yield_method}
+
+\subsubsection{Model Architecture}
+The yield prediction module uses a Random Forest regressor~\cite{breiman2001random} with 150~estimators, maximum tree depth of 14, and a minimum leaf size of 2. The model is wrapped in a scikit-learn \texttt{Pipeline} that preprocesses categorical features (state, crop, season) via one-hot encoding and numeric features (area in hectares) via standard scaling.
+
+To handle the right-skewed distribution of yield values across diverse crop types, a log-transform is applied to the target variable during training:
+\begin{equation}
+  y' = \log(1 + y)
+\end{equation}
+Predictions are mapped back to the original scale using the inverse transform:
+\begin{equation}
+  \hat{y} = e^{\hat{y}'} - 1
+\end{equation}
+
+\subsubsection{Conformal Prediction Intervals}
+Prediction uncertainty is quantified using split conformal prediction~\cite{vovk2005algorithmic,papadopoulos2002inductive}. The conformity scores are computed as absolute residuals on the calibration set (validation partition):
+\begin{equation}
+  R_{i} = |y_{i} - \hat{y}_{i}|, \quad i \in \mathcal{D}_{\text{cal}}
+\end{equation}
+For a desired coverage level $1 - \alpha$, the conformal quantile is:
+\begin{equation}
+  \hat{q} = \text{Quantile}\!\left(\{R_{i}\}_{i=1}^{n_{\text{cal}}}, \left\lceil \frac{(1-\alpha)(n_{\text{cal}} + 1)}{1} \right\rceil\Big/n_{\text{cal}}\right)
+\end{equation}
+The prediction interval for a new input $\mathbf{x}^{*}$ is then:
+\begin{equation}
+  C(\mathbf{x}^{*}) = \left[\max(0, \hat{y}^{*} - \hat{q}),\; \hat{y}^{*} + \hat{q}\right]
+\end{equation}
+The lower bound is clamped to zero since crop yield cannot be negative.
+
+\subsubsection{Explainability via SHAP}
+SHAP TreeExplainer is applied to the underlying Random Forest regressor within the pipeline. Since one-hot encoding expands the categorical features, the SHAP values are computed on the expanded feature space and reported with cleaned feature names (e.g., \texttt{crop\_Rice}, \texttt{season\_Kharif}).
+
+
+% ══════════════════════════════════════════════════════════════════
+% IV. SYSTEM ARCHITECTURE
+% ══════════════════════════════════════════════════════════════════
+\section{System Architecture}
+\label{sec:architecture}
+
+CropAI follows a decoupled, service-oriented architecture separating the ML serving layer from the presentation layer. Fig.~\ref{fig:architecture} illustrates the high-level system design.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\columnwidth}{!}{%
+  \begin{tikzpicture}[
+    box/.style={draw=black, thick, rectangle, text width=9cm, align=center, inner sep=2mm},
+    arrow/.style={-Latex, thick},
+    biarrow/.style={Latex-Latex, thick},
+    inputflow/.style={-Latex, thick}
+  ]
+  % Node 1
+  \node[box] (L1) {
+    \textbf{1. User Interface Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}{0.9\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Farmer Dashboard (Web/Mobile UI)
+        \item Model Selection Interface (Crop, Yield, Disease)
+        \item Input Forms (Soil: N, P, K, pH)
+        \item Input Forms (Weather: Temperature, Rainfall, Humidity)
+        \item Manual and Preset Input Options
+        \item Prediction Results Display
+        \item Risk and Confidence Score Display
+        \item Explainable AI Visualizations (XAI Outputs)
+        \item Error and Validation Messages
+      \end{itemize}
+    \end{minipage}
+  };
+  
+  % Node 2
+  \node[box, below=0.4cm of L1] (L2) {
+    \textbf{2. Presentation Logic Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}{0.9\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Handles UI Events and User Interactions
+        \item Validates Input Data
+        \item Transforms Input into Structured Format
+        \item Sends Requests to Backend Services
+        \item Handles Response Formatting
+        \item Displays Feedback and Errors
+      \end{itemize}
+    \end{minipage}
+  };
+
+  % Node 3
+  \node[box, below=0.4cm of L2] (L3) {
+    \textbf{3. Application Logic Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}{0.9\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Central Workflow Controller
+        \item Request Routing Engine
+        \item Prediction Pipeline Manager
+        \item Error Handling and Recovery Logic
+        \item Business Logic Implementation
+        \item Coordinates Modules (Input Processing, ML Engine, XAI Module)
+      \end{itemize}
+    \end{minipage}
+  };
+
+  % Node 4
+  \node[box, below=0.4cm of L3] (L4) {
+    \textbf{4. AI / Machine Learning Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}{0.9\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Data Preprocessing (Cleaning, Normalization, Feature Engineering)
+        \item Crop Recommendation Model
+        \item Crop Yield Prediction Model
+        \item Disease Detection Model
+        \item Uncertainty Estimation (Monte Carlo Dropout)
+        \item Explainable AI Module (SHAP, LIME)
+        \item Feature Importance Visualization
+        \item Model Inference Engine
+      \end{itemize}
+    \end{minipage}
+  };
+
+  % Node 5
+  \node[box, below=0.4cm of L4] (L5) {
+    \textbf{5. Data Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}[t]{0.48\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Soil Data Storage
+        \item Weather Data Storage
+        \item Historical Crop Dataset
+        \item Trained Model Storage
+      \end{itemize}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item User Input Logs
+        \item Prediction History
+        \item System Configuration Files
+      \end{itemize}
+    \end{minipage}
+  };
+
+  % Node 6
+  \node[box, below=0.4cm of L5] (L6) {
+    \textbf{6. External Integration Layer}\\[1mm]
+    \hrule
+    \vspace{1mm}
+    \begin{minipage}{0.9\textwidth}
+      \begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt, font=\small]
+        \item Weather APIs (Real-time Data)
+        \item Agricultural Datasets (Kaggle, Government Sources)
+        \item IoT Sensors (Soil Moisture, Temperature)
+        \item External Analytics Services
+      \end{itemize}
+    \end{minipage}
+  };
+
+  % Arrows
+  \draw[arrow] (L1) -- (L2);
+  \draw[arrow] (L2) -- (L3);
+  \draw[biarrow] (L3) -- (L4);
+  \draw[biarrow] (L4) -- (L5);
+  \draw[arrow] (L5) -- (L6);
+
+  % Input Flow Arrow
+  \draw[inputflow] (L6.east) -- ++(0.4,0) |- (L4.east);
+  \end{tikzpicture}%
+  }
+  \caption{High-level system architecture of CropAI. The 6-layer architecture decouples presentation, application logic, and ML model serving, and integrates with external agricultural and weather services.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Backend API Layer}
+The backend is implemented using FastAPI~\cite{fastapi2019} and served via Uvicorn. Three API route groups are mounted under versioned prefixes:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{POST /api/v1/disease/predict} --- accepts multipart image upload
+  \item \texttt{POST /api/v1/crop/recommend} --- accepts JSON with soil/climate parameters
+  \item \texttt{POST /api/v1/yield/predict} --- accepts JSON with crop, season, area, and state parameters
+\end{itemize}
+
+All request and response payloads are validated using Pydantic models with explicit field constraints (e.g., nitrogen range 0--200~mg/kg, pH range 0--14). Model services are loaded as singletons during application startup via the FastAPI lifespan handler, ensuring that model deserialization occurs once.
+
+CORS middleware is enabled to support cross-origin requests from the frontend. A request-logging middleware records HTTP method, path, response status, and latency for every request. An exception handler prevents internal stack traces from being exposed in error responses.
+
+\subsection{Frontend Layer}
+The primary frontend is a multi-page Streamlit application with dedicated pages for each module. The frontend communicates exclusively with the FastAPI backend via HTTP requests, ensuring separation of concerns. A secondary React-based frontend built with Vite is also present in the repository.
+
+\subsection{Deployment}
+The system is containerized using Docker. A \texttt{docker-compose.yml} orchestrates two services: the FastAPI backend (port~8000) and the Streamlit frontend (port~8501). A health-check endpoint (\texttt{GET /health}) returns the loaded status of all three models, enabling container orchestration readiness probes.
+
+
+% ══════════════════════════════════════════════════════════════════
+% V. DATASETS
+% ══════════════════════════════════════════════════════════════════
+\section{Datasets}
+\label{sec:datasets}
+
+Table~\ref{tab:datasets} summarizes the three datasets used across CropAI modules.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Summary of Datasets Used in CropAI}
+  \label{tab:datasets}
+  \begin{tabularx}{\columnwidth}{lXcc}
+    \toprule
+    \textbf{Module} & \textbf{Dataset} & \textbf{Samples} & \textbf{Classes} \\
+    \midrule
+    Disease & PlantVillage (colour) & ${\sim}$54\,000 images & 38 \\
+    Crop    & Kaggle Crop Rec.      & 2\,200 rows         & 22 \\
+    Yield   & India Crop Production & ${\sim}$247\,000 rows & Continuous \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{PlantVillage Disease Dataset}
+The PlantVillage dataset~\cite{hughes2015open} contains approximately 54,000 colour leaf images spanning 38 classes across 14 crop species. Classes include both disease and healthy categories (e.g., \textit{Tomato\_\_\_Late\_blight}, \textit{Apple\_\_\_healthy}). The dataset was collected under controlled laboratory conditions with uniform backgrounds. Images are split 70/15/15 into training, validation, and test partitions using stratified random sampling with a fixed random seed of~42.
+
+\subsection{Crop Recommendation Dataset}
+The Kaggle Crop Recommendation dataset contains 2,200 samples with seven numeric features (nitrogen, phosphorus, potassium, temperature, humidity, pH, rainfall) and a crop label target with 22~classes. Each class has exactly 100 samples, yielding a perfectly balanced dataset. Features are renamed for consistency (N$\to$nitrogen, P$\to$phosphorus, K$\to$potassium). The dataset is split 70/15/15 using stratified sampling.
+
+\subsection{India Crop Production Dataset}
+The India Crop Production dataset from Kaggle contains district-level agricultural production records across Indian states. After cleaning (removing null values, filtering zero-area records), the yield target is derived as $\texttt{yield} = \texttt{production} / \texttt{area}$. The features used are: state, crop, season (categorical), and area in hectares (numeric). A \emph{temporal split} is used: training data includes all years before the penultimate year, validation includes the penultimate year, and the test set includes the most recent year, respecting the temporal ordering to avoid data leakage.
+
+
+% ══════════════════════════════════════════════════════════════════
+% VI. EXPERIMENTAL SETUP
+% ══════════════════════════════════════════════════════════════════
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Computational Environment}
+All models are trained on a single machine. The disease model training utilized either CUDA-capable GPU, Apple Silicon (MPS), or CPU depending on availability. The disease model training completed in approximately 889 seconds (5~epochs). The crop model trained in approximately 1.7~seconds, and the yield model in approximately 451~seconds.
+
+\subsection{Reproducibility}
+All experiments use a fixed random seed of~42 for Python's \texttt{random}, NumPy, and PyTorch random number generators. Preprocessing artifacts (scalers, encoders, class mappings) are serialized alongside model weights. Dataset integrity is verified via SHA-256 hashing of the processed CSV manifests.
+
+\subsection{Evaluation Metrics}
+
+\subsubsection{Classification (Disease and Crop)}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Accuracy:} Overall fraction of correct predictions.
+  \item \textbf{Macro Precision, Recall, F1:} Unweighted average across classes.
+  \item \textbf{Expected Calibration Error (ECE):} Measures the alignment between predicted confidence and empirical accuracy across probability bins (Eq.~7).
+  \item \textbf{Top-$k$ Accuracy} (crop module only): Fraction of samples where the true class appears in the top-$k$ predicted classes.
+\end{itemize}
+
+\subsubsection{Regression (Yield)}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Mean Absolute Error (MAE):} Average absolute deviation between predicted and actual yield.
+  \item \textbf{Root Mean Squared Error (RMSE):} Square root of the mean squared prediction error.
+  \item \textbf{Coefficient of Determination ($R^{2}$):} Fraction of variance explained by the model.
+  \item \textbf{Conformal Coverage:} Empirical fraction of test samples whose true yield falls within the conformal interval.
+  \item \textbf{Conformal Interval Width:} Mean width of the prediction intervals.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════
+% VII. RESULTS
+% ══════════════════════════════════════════════════════════════════
+\section{Results}
+\label{sec:results}
+
+\subsection{Disease Classification Results}
+
+Table~\ref{tab:disease_results} presents the test-set performance of the MobileNetV3-Small disease classification model.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Disease Classification Module Results (Test Set)}
+  \label{tab:disease_results}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    Test Accuracy           & 0.9917 \\
+    Macro Precision         & 0.9902 \\
+    Macro Recall            & 0.9810 \\
+    Macro F1 Score          & 0.9846 \\
+    Best Validation Accuracy & 0.9925 \\
+    ECE                     & 0.1060 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The model achieves 99.17\% test accuracy with a macro F1 score of 0.985 across all 38~classes. The confusion matrix analysis reveals that the majority of misclassifications occur between visually similar disease presentations within the same crop species, particularly between \textit{Corn Cercospora leaf spot/Gray leaf spot} and \textit{Corn Northern Leaf Blight}, consistent with the known visual similarity of these conditions.
+
+The ECE of 0.106 indicates moderate miscalibration: the model tends to produce overconfident predictions, a common characteristic of modern neural networks trained with softmax outputs~\cite{guo2017calibration}. This further motivates the use of MC~Dropout uncertainty as a complementary reliability signal beyond raw softmax confidence.
+
+\subsection{Crop Recommendation Results}
+
+Table~\ref{tab:crop_results} presents the test-set performance of the calibrated Random Forest crop recommendation model.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Crop Recommendation Module Results (Test Set)}
+  \label{tab:crop_results}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    Test Accuracy           & 1.0000 \\
+    Macro Precision         & 1.0000 \\
+    Macro Recall            & 1.0000 \\
+    Macro F1 Score          & 1.0000 \\
+    Top-3 Accuracy          & 1.0000 \\
+    Top-5 Accuracy          & 1.0000 \\
+    ECE                     & 0.0755 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The crop recommendation model achieves perfect accuracy (100\%) on the held-out test set across all 22~classes. The confusion matrix is a clean diagonal. While this result is reproducible, it likely reflects the high separability of the Kaggle Crop Recommendation dataset rather than an expectation of perfect real-world performance. This dataset contains only 2,200 samples (100 per class) with well-separated feature distributions, making it straightforward for tree-based ensemble methods. The ECE of 0.075 indicates reasonably well-calibrated probabilities after sigmoid calibration.
+
+\subsection{Yield Prediction Results}
+
+Table~\ref{tab:yield_results} presents the test-set performance of the Random Forest yield prediction model.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Yield Prediction Module Results (Test Set)}
+  \label{tab:yield_results}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    MAE (tonnes/ha)                   & 1.142 \\
+    RMSE (tonnes/ha)                  & 2.989 \\
+    $R^{2}$                           & 0.947 \\
+    Conformal Coverage (90\% nominal) & 0.948 \\
+    Conformal Interval Width          & 7.406 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The yield model explains 94.7\% of the test-set variance ($R^{2} = 0.947$) with an MAE of 1.14~tonnes/ha. The conformal prediction intervals achieve an empirical coverage of 94.8\% at the 90\% nominal level, slightly above the target---a conservative overestimate that is consistent with the discrete nature of the conformal quantile calculation. The mean interval width of 7.41~tonnes/ha is relatively wide, reflecting the heterogeneity of yield distributions across the diverse set of crops and states in the dataset.
+
+\subsection{Inference Latency}
+
+Table~\ref{tab:latency} reports inference latencies extracted from the API server logs during live operation.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Observed API Inference Latency}
+  \label{tab:latency}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Endpoint} & \textbf{Typical Latency} \\
+    \midrule
+    Disease Predict (image)   & 110--250~ms \\
+    Crop Recommend (JSON)     & 40--80~ms \\
+    Yield Predict (JSON)      & 48--95~ms \\
+    Health Check              & $<$3~ms \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════
+% VIII. DISCUSSION
+% ══════════════════════════════════════════════════════════════════
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Disease Classification}
+The high test accuracy (99.17\%) is consistent with published results on the PlantVillage dataset~\cite{mohanty2016using} and reflects the relatively constrained nature of the benchmark: images are captured under uniform lighting with clean backgrounds. The MobileNetV3-Small architecture provides a reasonable trade-off between model size (${\sim}$6~MB checkpoint) and accuracy, making it suitable for deployment in resource-constrained environments. However, the ECE of 0.106 indicates that the raw softmax probabilities should not be interpreted as calibrated confidence estimates. The MC~Dropout mechanism provides an additional uncertainty signal, though with a trade-off of increased inference latency (10$\times$ forward passes).
+
+\subsection{Crop Recommendation}
+The perfect test accuracy warrants careful interpretation. The Kaggle Crop Recommendation dataset is small (2,200 samples), perfectly balanced, and exhibits high feature separability between classes. A Random Forest with 500 trees can easily memorize the decision boundaries in this feature space. This performance should not be extrapolated to real-world crop recommendation without retraining on larger, more representative datasets that capture the noise and variability of actual soil measurements. The SHAP explanations provide useful insight into which soil/climate features drive individual predictions, but the explanations are only as reliable as the underlying model.
+
+\subsection{Yield Prediction}
+The yield model's $R^{2}$ of 0.947 indicates strong explanatory power on the temporal test split. The log-transform of the target variable effectively addresses the skewed yield distribution across diverse crop types. However, the conformal interval width of 7.41~tonnes/ha is substantial, reflecting the inherent variability in Indian agricultural yields across states, crops, and seasons. This width may limit the practical utility of the intervals for precise planning, though they provide a valid statistical bound. Notably, the model uses only state, crop, season, and area as features; incorporating additional covariates such as rainfall, temperature, soil quality, and irrigation data could potentially narrow the intervals.
+
+\subsection{Explainability}
+The Grad-CAM heatmaps for disease diagnosis highlight spatial regions corresponding to visible disease symptoms (lesions, discoloration, spots) in most cases. However, as documented in the system disclaimers, Grad-CAM outputs represent correlation-based spatial activation patterns, not causal evidence of disease presence. The SHAP explanations for crop recommendation and yield prediction provide per-feature attribution that is more directly interpretable by agricultural practitioners, as the features (rainfall, nitrogen, pH, etc.) correspond to measurable physical quantities.
+
+\subsection{System Architecture}
+The decoupled architecture enables independent scaling and updating of individual modules. The API-first design with Pydantic validation ensures type safety and clear contract documentation via OpenAPI/Swagger. The Docker deployment enables reproducible deployment across environments.
+
+
+% ══════════════════════════════════════════════════════════════════
+% IX. LIMITATIONS
+% ══════════════════════════════════════════════════════════════════
+\section{Limitations}
+\label{sec:limitations}
+
+Several important limitations should be considered when interpreting the results and deploying this system:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Dataset representativeness (Disease):} The PlantVillage dataset contains images captured under controlled laboratory conditions. Models trained on this data are known to experience significant accuracy degradation on images captured in uncontrolled field conditions~\cite{barbedo2018factors}. No out-of-distribution (OOD) evaluation was performed.
+
+  \item \textbf{Dataset size and simplicity (Crop):} The Crop Recommendation dataset is small (2,200 samples) with clean, well-separated feature distributions. The perfect test accuracy should not be interpreted as evidence that the model will perform equally well on real-world soil data, which may contain measurement noise, missing values, and distribution shift.
+
+  \item \textbf{Limited feature set (Yield):} The yield model uses only four features (state, crop, season, area). Important predictors such as rainfall, temperature, irrigation status, soil quality, and fertilizer usage are not included in the current model, which limits both accuracy and the informativeness of the conformal intervals.
+
+  \item \textbf{Conformal interval width:} The mean conformal interval width of 7.41~tonnes/ha is wide relative to typical yield magnitudes, limiting the precision of the uncertainty estimates for practical planning.
+
+  \item \textbf{No ablation studies:} No systematic ablation studies were conducted to quantify the contribution of individual design choices (e.g., label smoothing, log-transform, calibration method, number of MC~Dropout passes).
+
+  \item \textbf{No baseline comparisons:} The paper does not include comparisons with alternative model architectures (e.g., ResNet, EfficientNet for disease; XGBoost, LightGBM for tabular tasks), which would be necessary to justify the specific model choices.
+
+  \item \textbf{MC Dropout applicability:} MobileNetV3-Small has dropout only in the classifier head. With a single dropout layer, the MC~Dropout uncertainty may not fully capture epistemic uncertainty compared to approaches with deeper dropout placement or ensemble methods.
+
+  \item \textbf{Single train/test evaluation:} Results are reported from a single train/test split rather than cross-validation, which limits the statistical reliability of the reported metrics.
+
+  \item \textbf{Geographic scope:} The yield model is trained exclusively on Indian agricultural data and cannot generalize to other geographic regions without retraining.
+
+  \item \textbf{No user study:} The utility of the explainability and uncertainty features for actual agricultural decision-making has not been evaluated through a user study.
+\end{enumerate}
+
+
+% ══════════════════════════════════════════════════════════════════
+% X. CONCLUSION AND FUTURE WORK
+% ══════════════════════════════════════════════════════════════════
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+This paper presented CropAI, a multi-module agricultural decision support system integrating crop disease diagnosis, crop recommendation, and yield prediction with systematic explainability and uncertainty quantification. The system demonstrates that explainability mechanisms (Grad-CAM, SHAP) and uncertainty methods (MC~Dropout, calibration, conformal prediction) can be integrated into an end-to-end ML serving architecture without excessive complexity.
+
+The experimental results on benchmark datasets show strong predictive performance: 99.17\% accuracy on PlantVillage disease classification, perfect accuracy on the Kaggle crop recommendation dataset, and $R^{2} = 0.947$ for yield prediction. However, these results should be interpreted in the context of the limitations discussed above, particularly regarding dataset representativeness and the gap between controlled benchmark conditions and real-world agricultural environments.
+
+Future work should address the following:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Real-world dataset evaluation:} Evaluate the disease model on field-captured datasets (e.g., PlantDoc) to quantify the domain shift from laboratory to field conditions.
+  \item \textbf{Expanded feature sets:} Incorporate climate covariates (rainfall, temperature from ERA5/WorldClim) into the yield model to improve predictions and narrow conformal intervals.
+  \item \textbf{Model comparisons:} Conduct systematic comparisons with alternative architectures (EfficientNet, XGBoost, LightGBM) and report results with confidence intervals from cross-validation.
+  \item \textbf{Deep ensembles:} Replace or complement MC~Dropout with deep ensemble methods for more robust uncertainty estimation.
+  \item \textbf{OOD detection:} Implement out-of-distribution detection (e.g., energy-based scoring) to flag inputs that lie outside the training distribution.
+  \item \textbf{User evaluation:} Conduct user studies with farmers and agricultural extension workers to assess the practical utility of the explainability and uncertainty features.
+  \item \textbf{Active learning:} Implement active learning loops to prioritize labeling of high-uncertainty samples, enabling efficient model improvement over time.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════
+% REFERENCES
+% ══════════════════════════════════════════════════════════════════
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
