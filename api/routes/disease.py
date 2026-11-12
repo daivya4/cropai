@@ -1,9 +1,11 @@
 import base64
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from PIL import UnidentifiedImageError
 from typing import Dict, Any
 
 from api.dependencies import get_disease_service
 from models.disease.inference import DiseaseInferenceService
+from models.disease.leaf_validation import NotLeafImageError
 
 router = APIRouter()
 
@@ -32,6 +34,13 @@ async def predict_disease(
     # Run prediction
     try:
         result = service.predict(content)
+    except NotLeafImageError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except (UnidentifiedImageError, OSError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded file is not a valid image. Please upload a JPG, PNG, or WebP image.",
+        ) from e
     except Exception as e:
         # Internal server error logging
         import logging

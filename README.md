@@ -117,6 +117,8 @@ This command compiles the `Dockerfile` into separate communicating services on a
 ### 2. Leaf Disease Diagnosis
 `POST /api/v1/disease/predict` (Content-Type: `multipart/form-data`)
 - **Payload:** `image=<binary_file>`
+- Before disease inference, a local zero-shot CLIP image check verifies that the upload appears to show a plant leaf. Non-leaf images return HTTP 422 with an upload guidance message; invalid image data returns HTTP 400.
+- The first API startup downloads `openai/clip-vit-base-patch32` from Hugging Face and caches it locally. Internet access is required for this initial download.
 - **Response:**
   ```json
   {

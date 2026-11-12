@@ -4,6 +4,7 @@ models:
     metadata_path: artifacts/disease/metadata.json
     class_mapping_path: artifacts/disease/class_mapping.json
     preprocessing_path: artifacts/disease/preprocessing.json
+    leaf_validator_model: openai/clip-vit-base-patch32
 
   crop:
     path: artifacts/crop/model.pkl

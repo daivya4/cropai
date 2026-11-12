@@ -281,7 +281,7 @@ export function CropRecommendation() {
           {/* Stats footer */}
           <div style={{ marginTop: 14, padding: '12px 14px', background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.12)', borderRadius: 10 }}>
             <div style={{ fontSize: 11, color: '#4ade80', fontFamily: 'ui-monospace, monospace', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 600 }}>MODEL STATS</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Accuracy: <strong style={{ color: '#fff' }}>100.0%</strong> · Records: <strong style={{ color: '#fff' }}>27,676</strong></div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Historical ranker: Top-1 hit <strong style={{ color: '#fff' }}>99.7%</strong> · Top-3 hit <strong style={{ color: '#fff' }}>100%</strong> · Records <strong style={{ color: '#fff' }}>27,676</strong></div>
           </div>
         </div>
 

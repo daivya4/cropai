@@ -1,3 +1,5 @@
+import logging
+
 from models.disease.inference import DiseaseInferenceService
 from models.crop.inference import CropInferenceService
 from models.crop.indian_inference import IndianCropInferenceService
@@ -17,6 +19,7 @@ def get_disease_service():
         try:
             _disease_service = DiseaseInferenceService()
         except Exception:
+            logging.exception("Failed to load the disease inference service.")
             return None
     return _disease_service
 

@@ -7,6 +7,7 @@ from torchvision import transforms, models
 
 from models.disease.uncertainty import calculate_mc_uncertainty
 from models.disease.explainability import GradCAM, overlay_heatmap
+from models.disease.leaf_validation import LeafImageValidator
 
 
 class DiseaseInferenceService:
@@ -19,6 +20,8 @@ class DiseaseInferenceService:
         self.model_path = self.config["models"]["disease"]["path"]
         self.class_mapping_path = self.config["models"]["disease"]["class_mapping_path"]
         self.preprocessing_path = self.config["models"]["disease"]["preprocessing_path"]
+        self.leaf_validator_model = self.config["models"]["disease"]["leaf_validator_model"]
+        self.leaf_validator = LeafImageValidator(self.leaf_validator_model)
 
         with open(self.class_mapping_path) as f:
             raw = json.load(f)
@@ -57,6 +60,10 @@ class DiseaseInferenceService:
 
     def predict(self, image_bytes: bytes) -> dict:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        self.leaf_validator.validate(image)
+        return self._predict_leaf(image)
+
+    def _predict_leaf(self, image: Image.Image) -> dict:
         input_tensor = self.transform(image).unsqueeze(0)
 
         # MC Dropout uncertainty

@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from api.dependencies import get_disease_service
 from api.main import app
 from api.routes import crop as crop_route, summary as summary_route
 from models.translation.indictrans import validate_translation
@@ -221,8 +222,22 @@ def test_disease_diagnosis_invalid_file_format():
     if response.status_code == 400:
         assert "Unsupported image format" in response.json()["detail"]
 
-def test_disease_diagnosis_valid_image():
-    # Create a dummy image in memory
+def test_disease_diagnosis_valid_image(monkeypatch):
+    class StubDiseaseService:
+        def predict(self, content):
+            return {
+                "prediction": "Tomato___healthy",
+                "confidence": 0.9,
+                "top_predictions": [{"class": "Tomato___healthy", "probability": 0.9}],
+                "uncertainty": {"reliability": "High"},
+                "overlay_bytes": b"overlay",
+                "model_version": "disease_v2",
+            }
+
+    monkeypatch.setitem(
+        app.dependency_overrides, get_disease_service, lambda: StubDiseaseService()
+    )
+
     img = Image.new("RGB", (224, 224), (255, 255, 255))
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
